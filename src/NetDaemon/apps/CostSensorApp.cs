@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.HassModel;
+using NetDaemon.Extensions.MqttEntityManager;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -15,15 +16,16 @@ public class CostSensorApp
 {
     private readonly IHaContext _ha;
     private readonly ILogger<CostSensorApp> _logger;
+    private readonly IMqttEntityManager _entityManager;
     private readonly Dictionary<string, double> _costSensorValues = new();
     private readonly Dictionary<string, double> _tariffSensorValues = new();
     private readonly List<IDisposable> _subscriptions = new();
-    private readonly Dictionary<string, string> _costSensorEntityIds = new();
 
-    public CostSensorApp(IHaContext ha, ILogger<CostSensorApp> logger)
+    public CostSensorApp(IHaContext ha, ILogger<CostSensorApp> logger, IMqttEntityManager entityManager)
     {
         _ha = ha;
         _logger = logger;
+        _entityManager = entityManager;
 
         var config = LoadConfiguration();
         
@@ -123,9 +125,6 @@ public class CostSensorApp
     {
         _logger.LogInformation("Setting up cost sensor: {Name} (ID: {Id})", sensor.Name, sensor.UniqueId);
 
-        // Store the entity ID for later updates
-        _costSensorEntityIds[sensor.UniqueId] = sensor.UniqueId;
-
         // Fetch and verify energy sensor from HomeAssistant
         var energySensor = _ha.Entity(sensor.Energy);
         
@@ -157,11 +156,40 @@ public class CostSensorApp
         {
             // Initialize the cost sensor value to 0 and create the entity
             _costSensorValues[sensor.UniqueId] = 0.0;
-            _logger.LogInformation("Cost sensor {UniqueId} does not exist in HomeAssistant, initializing with value 0", 
+            _logger.LogInformation("Cost sensor {UniqueId} does not exist in HomeAssistant, creating it", 
                 sensor.UniqueId);
             
-            // Create the cost sensor entity in Home Assistant
-            UpdateCostSensorState(sensor.UniqueId, sensor.Name, 0.0);
+            // Create the cost sensor entity using MQTT Entity Manager
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await _entityManager.CreateAsync(
+                        sensor.UniqueId,
+                        new EntityCreationOptions(
+                            DeviceClass: "monetary",
+                            UniqueId: sensor.UniqueId.Replace("sensor.", ""),
+                            Name: sensor.Name,
+                            Persist: true
+                        ),
+                        new
+                        {
+                            unit_of_measurement = "kr",
+                            state_class = "measurement"
+                        }
+                    );
+                    
+                    // Set initial state to 0
+                    await _entityManager.SetStateAsync(sensor.UniqueId, "0.00");
+                    await _entityManager.SetAvailabilityAsync(sensor.UniqueId, "online");
+                    
+                    _logger.LogInformation("Successfully created cost sensor {UniqueId}", sensor.UniqueId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error creating cost sensor {UniqueId}", sensor.UniqueId);
+                }
+            }).Wait();
         }
 
         // Subscribe to energy sensor state changes
@@ -214,7 +242,19 @@ public class CostSensorApp
                         sensor.Name, energyDelta, tariff, costIncrement, _costSensorValues[sensor.UniqueId]);
 
                     // Update the cost sensor entity in Home Assistant
-                    UpdateCostSensorState(sensor.UniqueId, sensor.Name, _costSensorValues[sensor.UniqueId]);
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _entityManager.SetStateAsync(sensor.UniqueId, _costSensorValues[sensor.UniqueId].ToString("F2"));
+                            _logger.LogDebug("Successfully updated cost sensor {UniqueId} to {Value} kr", 
+                                sensor.UniqueId, _costSensorValues[sensor.UniqueId]);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error updating cost sensor state for {UniqueId}", sensor.UniqueId);
+                        }
+                    }).Wait();
                 }
                 catch (Exception ex)
                 {
@@ -223,41 +263,6 @@ public class CostSensorApp
             });
 
         _subscriptions.Add(energySubscription);
-    }
-
-    /// <summary>
-    /// Updates the cost sensor entity state in Home Assistant
-    /// </summary>
-    /// <param name="entityId">The entity ID of the cost sensor</param>
-    /// <param name="friendlyName">The friendly name of the cost sensor</param>
-    /// <param name="value">The cost value to set</param>
-    private void UpdateCostSensorState(string entityId, string friendlyName, double value)
-    {
-        try
-        {
-            _logger.LogDebug("Updating cost sensor {EntityId} to value {Value}", entityId, value);
-            
-            // Use the set_state service to create or update the entity
-            // Note: Home Assistant's homeassistant.set_state service creates the entity if it doesn't exist
-            _ha.CallService("homeassistant", "set_state", data: new
-            {
-                entity_id = entityId,
-                state = value.ToString("F2"),  // Format to 2 decimal places
-                attributes = new
-                {
-                    unit_of_measurement = "kr",
-                    device_class = "monetary",
-                    state_class = "measurement",
-                    friendly_name = friendlyName
-                }
-            });
-            
-            _logger.LogInformation("Successfully updated cost sensor {EntityId} to {Value} kr", entityId, value);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating cost sensor state for {EntityId}", entityId);
-        }
     }
 
     private CostSensorConfig? LoadConfiguration()

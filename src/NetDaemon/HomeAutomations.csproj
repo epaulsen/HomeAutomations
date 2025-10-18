@@ -11,6 +11,7 @@
   <ItemGroup>
     <PackageReference Include="JoySoftware.NetDaemon.AppModel" Version="23.44.1" />
     <PackageReference Include="JoySoftware.NetDaemon.Extensions.Logging" Version="23.44.1" />
+    <PackageReference Include="JoySoftware.NetDaemon.Extensions.Mqtt" Version="23.44.0" />
     <PackageReference Include="JoySoftware.NetDaemon.HassModel" Version="23.44.1" />
     <PackageReference Include="JoySoftware.NetDaemon.Runtime" Version="23.44.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
