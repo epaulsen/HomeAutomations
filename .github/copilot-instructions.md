@@ -2,6 +2,28 @@
 
 This repository contains a NetDaemon-based home automation project for Home Assistant. Follow these guidelines when contributing or making changes to this codebase.
 
+## Important: Consult Documentation First
+
+**When working on issues in this repository, always refer to the official documentation instead of making assumptions about how things work.**
+
+### Primary Documentation Sources (Whitelisted & Encouraged)
+
+1. **NetDaemon Documentation**: https://netdaemon.xyz/
+   - This is the official NetDaemon framework documentation
+   - Contains comprehensive guides, API references, and examples
+   - **Always consult this first** when uncertain about NetDaemon behavior or features
+
+2. **NetDaemon GitHub Repository**: https://github.com/net-daemon/netdaemon/
+   - Source code reference for NetDaemon framework
+   - Useful for understanding implementation details and advanced usage
+   - Contains additional examples and test cases
+
+Both URLs are **whitelisted and actively encouraged** for GitHub Copilot to access. Use these resources to:
+- Understand NetDaemon APIs and patterns
+- Find code examples and best practices
+- Verify correct usage of framework features
+- Resolve uncertainties about behavior
+
 ## Project Overview
 
 - **Framework**: NetDaemon v4 (v23.44.1)
@@ -208,9 +230,13 @@ The project includes Docker support:
 
 ## Resources
 
-- [NetDaemon Documentation](https://netdaemon.xyz/)
-- [Home Assistant Developer Docs](https://developers.home-assistant.io/)
-- [Reactive Extensions (Rx)](http://reactivex.io/)
+### Official NetDaemon Resources (Whitelisted - Use These!)
+- **[NetDaemon Documentation](https://netdaemon.xyz/)** - Primary reference for all NetDaemon features and APIs
+- **[NetDaemon GitHub Repository](https://github.com/net-daemon/netdaemon/)** - Source code and implementation details
+
+### Related Documentation
+- [Home Assistant Developer Docs](https://developers.home-assistant.io/) - For Home Assistant entity and service information
+- [Reactive Extensions (Rx)](http://reactivex.io/) - For understanding reactive programming patterns used in NetDaemon
 
 ## Common Tasks
 
