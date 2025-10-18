@@ -149,4 +149,47 @@ public class CostSensorAppTests
         // Assert
         Assert.Equal(shouldCheckSpike, withinTimeWindow);
     }
+
+    [Fact]
+    public async Task InitializeAsync_WhenNotRunningInContainer_ShouldUseDefaultPath()
+    {
+        // Arrange
+        var mockHaContext = new Mock<IHaContext>();
+        var mockLogger = new Mock<ILogger<CostSensorApp>>();
+        var mockEntityManager = new Mock<IMqttEntityManager>();
+        var mockLoggerFactory = new Mock<ILoggerFactory>();
+        var mockScheduler = new Mock<IScheduler>();
+        
+        mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
+        
+        var stateSubject = new Subject<StateChange>();
+        mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
+
+        // Ensure environment variable is not set (or set to false)
+        Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", null);
+
+        try
+        {
+            // Act
+            var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object, mockScheduler.Object);
+            await app.InitializeAsync(CancellationToken.None);
+
+            // Assert - should not log "Running in container"
+            mockLogger.Verify(
+                x => x.Log(
+                    LogLevel.Information,
+                    It.IsAny<EventId>(),
+                    It.Is<It.IsAnyType>((o, t) => 
+                        o.ToString()!.Contains("Running in container")),
+                    null,
+                    It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+                Times.Never);
+        }
+        finally
+        {
+            // Cleanup
+            Environment.SetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER", null);
+        }
+    }
 }
