@@ -13,20 +13,21 @@ namespace HomeAutomations.Apps;
 /// Listens for energy sensor changes and calculates costs based on tariff sensors
 /// </summary>
 [NetDaemonApp]
-public class CostSensorApp : IAsyncInitializable
+public class CostSensorApp : IAsyncInitializable, IDisposable
 {
     private readonly IHaContext _ha;
     private readonly ILogger<CostSensorApp> _logger;
     private readonly IMqttEntityManager _entityManager;
-    private readonly Dictionary<string, double> _costSensorValues = new();
-    private readonly Dictionary<string, double> _tariffSensorValues = new();
-    private readonly List<IDisposable> _subscriptions = new();
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly Dictionary<string, PriceSensor> _priceSensors = new();
+    private readonly List<CostSensor> _costSensors = new();
 
-    public CostSensorApp(IHaContext ha, ILogger<CostSensorApp> logger, IMqttEntityManager entityManager)
+    public CostSensorApp(IHaContext ha, ILogger<CostSensorApp> logger, IMqttEntityManager entityManager, ILoggerFactory loggerFactory)
     {
         _ha = ha;
         _logger = logger;
         _entityManager = entityManager;
+        _loggerFactory = loggerFactory;
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
@@ -41,8 +42,8 @@ public class CostSensorApp : IAsyncInitializable
 
         _logger.LogInformation("Initializing CostSensorApp with {Count} cost sensors", config.CostSensors.Count);
 
-        // Initialize tariff sensors - collect unique tariff sensors and subscribe once per unique sensor
-        InitializeTariffSensors(config.CostSensors);
+        // Initialize price sensors - collect unique tariff sensors and create PriceSensor instances
+        InitializePriceSensors(config.CostSensors);
 
         // Initialize cost sensors
         foreach (var sensor in config.CostSensors)
@@ -53,7 +54,7 @@ public class CostSensorApp : IAsyncInitializable
         _logger.LogInformation("CostSensorApp initialized successfully");
     }
 
-    private void InitializeTariffSensors(List<CostSensorEntry> costSensors)
+    private void InitializePriceSensors(List<CostSensorEntry> costSensors)
     {
         // Get unique tariff sensors
         var uniqueTariffSensors = costSensors
@@ -65,202 +66,33 @@ public class CostSensorApp : IAsyncInitializable
 
         foreach (var tariffSensorId in uniqueTariffSensors)
         {
-            var tariffSensor = _ha.Entity(tariffSensorId);
+            var priceSensor = new PriceSensor(
+                _ha,
+                _loggerFactory.CreateLogger<PriceSensor>(),
+                tariffSensorId);
             
-            // Get initial state
-            var tariffState = tariffSensor.State;
-            
-            if (tariffState == null)
-            {
-                _logger.LogWarning("Tariff sensor {Tariff} not found in HomeAssistant or has no state", tariffSensorId);
-                _tariffSensorValues[tariffSensorId] = 0.0;
-            }
-            else if (!double.TryParse(tariffState, CultureInfo.InvariantCulture, out var tariffValue))
-            {
-                _logger.LogWarning("Could not parse tariff value '{TariffValue}' for {Tariff}", tariffState, tariffSensorId);
-                _tariffSensorValues[tariffSensorId] = 0.0;
-            }
-            else
-            {
-                _tariffSensorValues[tariffSensorId] = tariffValue;
-                _logger.LogInformation("Retrieved tariff sensor {Tariff} from HomeAssistant with current value: {Value}", 
-                    tariffSensorId, tariffValue);
-            }
-
-            // Subscribe to tariff sensor state changes
-            var tariffSubscription = tariffSensor
-                .StateChanges()
-                .Subscribe(change =>
-                {
-                    try
-                    {
-                        var newTariff = change.New?.State;
-                        
-                        if (string.IsNullOrEmpty(newTariff))
-                        {
-                            _logger.LogDebug("Tariff sensor {Tariff} state change has no new value", tariffSensorId);
-                            return;
-                        }
-                        
-                        if (!double.TryParse(newTariff, CultureInfo.InvariantCulture, out var tariffValue))
-                        {
-                            _logger.LogWarning("Could not parse new tariff value '{TariffValue}' for {Tariff}", 
-                                newTariff, tariffSensorId);
-                            return;
-                        }
-                        
-                        _tariffSensorValues[tariffSensorId] = tariffValue;
-                        
-                        _logger.LogInformation(
-                            "Tariff sensor {Tariff} changed to {NewTariff}",
-                            tariffSensorId, tariffValue);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error processing tariff state change for {Sensor}", tariffSensorId);
-                    }
-                });
-
-            _subscriptions.Add(tariffSubscription);
+            _priceSensors[tariffSensorId] = priceSensor;
         }
     }
 
-    private async Task InitializeCostSensorAsync(CostSensorEntry sensor, CancellationToken cancellationToken)
+    private async Task InitializeCostSensorAsync(CostSensorEntry sensorConfig, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Setting up cost sensor: {Name} (ID: {Id})", sensor.Name, sensor.UniqueId);
-
-        // Fetch and verify energy sensor from HomeAssistant
-        var energySensor = _ha.Entity(sensor.Energy);
-        
-        // Verify energy sensor exists by checking its state
-        var energyState = energySensor.State;
-        
-        if (energyState == null)
+        // Get the price sensor for this cost sensor's tariff
+        if (!_priceSensors.TryGetValue(sensorConfig.Tariff, out var priceSensor))
         {
-            _logger.LogWarning("Energy sensor {Energy} not found in HomeAssistant or has no state", sensor.Energy);
-        }
-        else
-        {
-            _logger.LogInformation("Retrieved energy sensor {Energy} from HomeAssistant with current state: {State}", 
-                sensor.Energy, energyState);
+            _logger.LogError("Price sensor for tariff {Tariff} not found", sensorConfig.Tariff);
+            return;
         }
 
-        // Check if the cost sensor entity exists in Home Assistant
-        var costSensorEntity = _ha.Entity(sensor.UniqueId);
-        var existingState = costSensorEntity.State;
-        
-        if (!string.IsNullOrEmpty(existingState) && double.TryParse(existingState, CultureInfo.InvariantCulture, out var existingValue))
-        {
-            // Load the existing value from Home Assistant
-            _costSensorValues[sensor.UniqueId] = existingValue;
-            _logger.LogInformation("Cost sensor {UniqueId} exists in HomeAssistant with value: {Value}", 
-                sensor.UniqueId, existingValue);
-        }
-        else
-        {
-            // Initialize the cost sensor value to 0 and create the entity
-            _costSensorValues[sensor.UniqueId] = 0.0;
-            _logger.LogInformation("Cost sensor {UniqueId} does not exist in HomeAssistant, creating it", 
-                sensor.UniqueId);
-            
-            // Create the cost sensor entity using MQTT Entity Manager
-            try
-            {
-                await _entityManager.CreateAsync(
-                    sensor.UniqueId,
-                    new EntityCreationOptions(
-                        DeviceClass: "monetary",
-                        UniqueId: sensor.UniqueId.Replace("sensor.", ""),
-                        Name: sensor.Name,
-                        Persist: true
-                    ),
-                    new
-                    {
-                        unit_of_measurement = "kr",
-                        state_class = "measurement"
-                    }
-                );
-                
-                // Set initial state to 0
-                await _entityManager.SetStateAsync(sensor.UniqueId, "0.00");
-                await _entityManager.SetAvailabilityAsync(sensor.UniqueId, "online");
-                
-                _logger.LogInformation("Successfully created cost sensor {UniqueId}", sensor.UniqueId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating cost sensor {UniqueId}", sensor.UniqueId);
-            }
-        }
+        var costSensor = new CostSensor(
+            _ha,
+            _entityManager,
+            _loggerFactory.CreateLogger<CostSensor>(),
+            priceSensor,
+            sensorConfig);
 
-        // Subscribe to energy sensor state changes
-        var energySubscription = energySensor
-            .StateChanges()
-            .SubscribeAsync(async change =>
-            {
-                try
-                {
-                    // Get the old and new values
-                    var oldValue = change.Old?.State;
-                    var newValue = change.New?.State;
-
-                    // If OldValue is null, skip this event (as per requirements)
-                    if (string.IsNullOrEmpty(oldValue))
-                    {
-                        _logger.LogDebug("Skipping first state change for {Sensor} - no old value", sensor.Energy);
-                        return;
-                    }
-
-                    // Parse the old and new energy values
-                    if (!double.TryParse(oldValue, CultureInfo.InvariantCulture, out var oldEnergy))
-                    {
-                        _logger.LogWarning("Could not parse old value '{OldValue}' for {Sensor}", oldValue, sensor.Energy);
-                        return;
-                    }
-
-                    if (!double.TryParse(newValue, CultureInfo.InvariantCulture, out var newEnergy))
-                    {
-                        _logger.LogWarning("Could not parse new value '{NewValue}' for {Sensor}", newValue, sensor.Energy);
-                        return;
-                    }
-
-                    // Get the current tariff value from the dictionary
-                    if (!_tariffSensorValues.TryGetValue(sensor.Tariff, out var tariff))
-                    {
-                        _logger.LogWarning("Tariff sensor {Tariff} value not available in dictionary", sensor.Tariff);
-                        return;
-                    }
-
-                    // Calculate the cost increment
-                    var energyDelta = newEnergy - oldEnergy;
-                    var costIncrement = energyDelta * tariff;
-
-                    // Update the cost sensor value
-                    _costSensorValues[sensor.UniqueId] += costIncrement;
-
-                    _logger.LogDebug(
-                        "Cost update for {Name}: energy delta = {Delta} kWh, tariff = {Tariff}, cost increment = {CostIncrement}, total cost = {TotalCost}",
-                        sensor.Name, energyDelta, tariff, costIncrement, _costSensorValues[sensor.UniqueId]);
-
-                    // Update the cost sensor entity in Home Assistant
-                    try
-                    {
-                        await _entityManager.SetStateAsync(sensor.UniqueId, _costSensorValues[sensor.UniqueId].ToString("F2"));
-                        _logger.LogDebug("Successfully updated cost sensor {UniqueId} to {Value} kr", 
-                            sensor.UniqueId, _costSensorValues[sensor.UniqueId]);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error updating cost sensor state for {UniqueId}", sensor.UniqueId);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error processing state change for {Sensor}", sensor.Energy);
-                }
-            });
-
-        _subscriptions.Add(energySubscription);
+        await costSensor.InitializeAsync(cancellationToken);
+        _costSensors.Add(costSensor);
     }
 
     private CostSensorConfig? LoadConfiguration()
@@ -353,6 +185,23 @@ public class CostSensorApp : IAsyncInitializable
         {
             _logger.LogError(ex, "Error creating sample configuration at {Path}", configPath);
         }
+    }
+
+    public void Dispose()
+    {
+        // Dispose all cost sensors
+        foreach (var costSensor in _costSensors)
+        {
+            costSensor.Dispose();
+        }
+        _costSensors.Clear();
+
+        // Dispose all price sensors
+        foreach (var priceSensor in _priceSensors.Values)
+        {
+            priceSensor.Dispose();
+        }
+        _priceSensors.Clear();
     }
 }
 

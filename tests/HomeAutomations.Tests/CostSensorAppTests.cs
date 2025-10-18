@@ -17,13 +17,18 @@ public class CostSensorAppTests
         var mockHaContext = new Mock<IHaContext>();
         var mockLogger = new Mock<ILogger<CostSensorApp>>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
+        var mockLoggerFactory = new Mock<ILoggerFactory>();
+        
+        // Setup logger factory to return mock loggers for PriceSensor and CostSensor
+        mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
         
         // Setup StateAllChanges to return an observable that entities can use
         var stateSubject = new Subject<StateChange>();
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
 
         // Act
-        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object);
+        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object);
         await app.InitializeAsync(CancellationToken.None);
 
         // Assert
@@ -52,29 +57,31 @@ public class CostSensorAppTests
         var mockHaContext = new Mock<IHaContext>();
         var mockLogger = new Mock<ILogger<CostSensorApp>>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
+        var mockLoggerFactory = new Mock<ILoggerFactory>();
+        
+        // Setup logger factory to return mock loggers for PriceSensor and CostSensor
+        mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>()))
+            .Returns(new Mock<ILogger>().Object);
         
         // Setup StateAllChanges to return an observable that entities can use
         var stateSubject = new Subject<StateChange>();
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
 
         // Act
-        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object);
+        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object);
         await app.InitializeAsync(CancellationToken.None);
 
         // Assert
         Assert.NotNull(app);
         
-        // Verify that sensors were retrieved from HomeAssistant
-        // Check that we logged retrieving sensors (or warnings if sensors don't exist)
+        // Verify that the app properly initialized price sensors (tariff sensors)
+        // The refactored code logs "Found X unique tariff sensors" from CostSensorApp
         mockLogger.Verify(
             x => x.Log(
-                It.IsAny<LogLevel>(),
+                LogLevel.Information,
                 It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((o, t) => 
-                    o.ToString()!.Contains("Retrieved energy sensor") || 
-                    o.ToString()!.Contains("Energy sensor") ||
-                    o.ToString()!.Contains("Retrieved tariff sensor") ||
-                    o.ToString()!.Contains("Tariff sensor")),
+                    o.ToString()!.Contains("Found") && o.ToString()!.Contains("unique tariff sensors")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce);
