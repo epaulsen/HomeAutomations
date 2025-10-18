@@ -28,7 +28,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: epaulsen/homeautomattion
+        images: epaulsen/homeautomation
         tags: |
           type=raw,value=latest
           type=sha,format=long
