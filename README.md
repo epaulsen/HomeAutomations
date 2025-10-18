@@ -35,8 +35,13 @@ HomeAutomations/
 │       ├── Program.cs                 # Application entry point
 │       ├── appsettings.json           # Base configuration
 │       └── appsettings.local.json.example # Local settings template
+├── tests/
+│   └── HomeAutomations.Tests/         # Unit tests
+│       ├── HomeAutomations.Tests.csproj # Test project file
+│       └── *Tests.cs                  # Test files
 ├── Dockerfile                         # Container build file
 ├── docker-compose.yml                 # Container orchestration
+├── HomeAutomations.sln                # Solution file
 └── README.md                          # This file
 ```
 
@@ -71,15 +76,20 @@ HomeAutomations/
 
 3. **Restore dependencies**
    ```bash
-   dotnet restore src/NetDaemon/HomeAutomations.csproj
+   dotnet restore HomeAutomations.sln
    ```
 
 4. **Build the project**
    ```bash
-   dotnet build src/NetDaemon/HomeAutomations.csproj
+   dotnet build HomeAutomations.sln
    ```
 
-5. **Run the application**
+5. **Run tests (optional)**
+   ```bash
+   dotnet test HomeAutomations.sln
+   ```
+
+6. **Run the application**
    ```bash
    dotnet run --project src/NetDaemon/HomeAutomations.csproj
    ```
@@ -213,6 +223,8 @@ For Docker deployments, you can also use environment variables:
 - Test automations carefully before deploying to production
 - Use `appsettings.local.json` for local development settings
 - Keep sensitive tokens out of source control
+- Run tests regularly: `dotnet test HomeAutomations.sln`
+- Follow the coding standards outlined in CONTRIBUTING.md
 
 ## Troubleshooting
 

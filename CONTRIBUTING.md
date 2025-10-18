@@ -20,8 +20,25 @@ Thank you for considering contributing to this project! Here are some guidelines
 
 ### Building the Project
 ```bash
+# Build using solution file (recommended)
+dotnet restore HomeAutomations.sln
+dotnet build HomeAutomations.sln
+
+# Or build individual projects
 dotnet restore src/NetDaemon/HomeAutomations.csproj
 dotnet build src/NetDaemon/HomeAutomations.csproj
+```
+
+### Running Tests
+```bash
+# Run all tests
+dotnet test HomeAutomations.sln
+
+# Run tests with detailed output
+dotnet test HomeAutomations.sln --verbosity normal
+
+# Run tests for a specific project
+dotnet test tests/HomeAutomations.Tests/HomeAutomations.Tests.csproj
 ```
 
 ### Running Locally
@@ -77,9 +94,53 @@ public class MyAutomation
 
 ## Testing
 
+### Unit Tests
+The project includes a test suite using xUnit, Moq, and FluentAssertions:
+
 - Test your automations thoroughly before submitting
+- Write unit tests for new automation classes
 - Verify that your code builds without errors
-- Ensure existing automations still work
+- Run all tests and ensure they pass: `dotnet test HomeAutomations.sln`
+- Ensure existing automations and tests still work
+
+### Writing Tests
+1. Create test files in the `tests/HomeAutomations.Tests/` directory
+2. Follow the naming convention: `<ClassName>Tests.cs`
+3. Use Moq to mock `IHaContext` and `ILogger` dependencies
+4. Use FluentAssertions for readable assertions
+
+Example test:
+```csharp
+using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Moq;
+using NetDaemon.HassModel;
+using HomeAutomations.Apps;
+using System.Reactive.Subjects;
+using NetDaemon.HassModel.Entities;
+
+namespace HomeAutomations.Tests;
+
+public class MyAutomationTests
+{
+    [Fact]
+    public void Constructor_ShouldLogInitialization()
+    {
+        // Arrange
+        var mockHaContext = new Mock<IHaContext>();
+        var mockLogger = new Mock<ILogger<MyAutomation>>();
+        
+        var stateSubject = new Subject<StateChange>();
+        mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
+
+        // Act
+        var automation = new MyAutomation(mockHaContext.Object, mockLogger.Object);
+
+        // Assert
+        automation.Should().NotBeNull();
+    }
+}
+```
 
 ## Pull Request Guidelines
 
