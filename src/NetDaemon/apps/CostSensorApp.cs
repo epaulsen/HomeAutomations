@@ -125,7 +125,9 @@ public class CostSensorApp
 
         if (!File.Exists(configPath))
         {
-            _logger.LogInformation("Configuration file not found at {Path}, app will do nothing", configPath);
+            _logger.LogInformation("Configuration file not found at {Path}, creating sample configuration", configPath);
+            CreateSampleConfiguration(configPath);
+            _logger.LogInformation("Sample configuration file created at {Path}. Please edit it with your sensor IDs.", configPath);
             return null;
         }
 
@@ -146,6 +148,64 @@ public class CostSensorApp
         {
             _logger.LogError(ex, "Error loading configuration from {Path}", configPath);
             return null;
+        }
+    }
+
+    private void CreateSampleConfiguration(string configPath)
+    {
+        try
+        {
+            // Ensure the directory exists
+            var directory = Path.GetDirectoryName(configPath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            // Create sample configuration with commented examples
+            var sampleConfig = @"# Cost sensors configuration
+# This file defines cost sensors that calculate energy costs based on tariff and energy sensors
+#
+# Configuration structure:
+# cost_sensors:
+#   - name: <name of cost sensor>           # Human-readable name for the sensor
+#     unique_id: <unique id of sensor>      # Unique identifier (e.g., sensor.my_cost)
+#     tariff: <unique_id of tariff sensor>  # Sensor containing the price per unit (e.g., sensor.electricity_tariff)
+#     energy: <unique_id of energy sensor>  # Sensor containing energy consumption (e.g., sensor.my_energy)
+#     cron: <reset schedule>                # Optional: null, ""daily"", ""monthly"", or ""yearly""
+#
+# Example configuration (remove the # to enable):
+
+# cost_sensors:
+#   - name: ""Living Room Cost""
+#     unique_id: ""sensor.living_room_energy_cost""
+#     tariff: ""sensor.electricity_tariff""
+#     energy: ""sensor.living_room_energy""
+#     cron: null
+#
+#   - name: ""Kitchen Cost""
+#     unique_id: ""sensor.kitchen_energy_cost""
+#     tariff: ""sensor.electricity_tariff""
+#     energy: ""sensor.kitchen_energy""
+#     cron: ""daily""
+#
+#   - name: ""Total Energy Cost""
+#     unique_id: ""sensor.total_energy_cost""
+#     tariff: ""sensor.electricity_tariff""
+#     energy: ""sensor.total_energy""
+#     cron: ""monthly""
+
+# To activate this configuration:
+# 1. Uncomment the 'cost_sensors:' line and the sensor entries below it
+# 2. Replace the example sensor IDs with your actual Home Assistant entity IDs
+# 3. Save the file and restart the NetDaemon app
+";
+
+            File.WriteAllText(configPath, sampleConfig);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating sample configuration at {Path}", configPath);
         }
     }
 }
