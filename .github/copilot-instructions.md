@@ -182,12 +182,31 @@ ha.Entity("sensor.temperature")
     .StateChanges()
     .Subscribe(change =>
     {
-        if (double.TryParse(change.New?.State, out var temp))
+        if (double.TryParse(change.New?.State, CultureInfo.InvariantCulture, out var temp))
         {
             // Check thresholds
         }
     });
 ```
+
+### Number Parsing
+Always use culture-invariant parsing for numeric values to ensure consistent behavior across different locales:
+
+```csharp
+// Always specify CultureInfo.InvariantCulture when parsing numbers
+if (double.TryParse(value, CultureInfo.InvariantCulture, out var result))
+{
+    // Use result
+}
+
+// Also applies to other numeric types
+if (int.TryParse(value, CultureInfo.InvariantCulture, out var intResult))
+{
+    // Use intResult
+}
+```
+
+Remember to add `using System.Globalization;` at the top of your file when using `CultureInfo`.
 
 ### Delayed Actions
 For actions that should happen after a delay:
