@@ -102,7 +102,12 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
 
     private CostSensorConfig? LoadConfiguration()
     {
-        var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "apps", "config", "cost_sensors.yaml");
+        var configPath = GetConfigurationPath();
+        
+        if (configPath == null)
+        {
+            return null;
+        }
         
         _logger.LogDebug("Looking for configuration file at: {Path}", configPath);
 
@@ -133,6 +138,32 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
             _logger.LogError(ex, "Error loading configuration from {Path}", configPath);
             return null;
         }
+    }
+
+    private string? GetConfigurationPath()
+    {
+        // Check if running in a container
+        var runningInContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
+        
+        if (bool.TryParse(runningInContainer, out var isContainer) && isContainer)
+        {
+            _logger.LogInformation("Running in container, using /config directory");
+            var configDir = "/config";
+            
+            if (!Directory.Exists(configDir))
+            {
+                _logger.LogError("Configuration directory {ConfigDir} does not exist. " +
+                    "Please mount a volume to /config in your docker-compose.yml or Docker run command. " +
+                    "Example: volumes: - ./config:/config", configDir);
+                Environment.Exit(1);
+                return null;
+            }
+            
+            return Path.Combine(configDir, "cost_sensors.yaml");
+        }
+        
+        // Default behavior for non-container environments
+        return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "apps", "config", "cost_sensors.yaml");
     }
 
     private void CreateSampleConfiguration(string configPath)
@@ -191,7 +222,7 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
 # 3. Save the file and restart the NetDaemon app
 ";
 
-            File.WriteAllText(configPath, sampleConfig);
+            File.WriteAllText(configPath, sampleConfig, Encoding.UTF8);
         }
         catch (Exception ex)
         {

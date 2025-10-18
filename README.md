@@ -94,7 +94,7 @@ HomeAutomations/
    dotnet run --project src/NetDaemon/HomeAutomations.csproj
    ```
 
-### Option 2: Docker Deployment
+### Option 2: Docker Deployment (Build from Source)
 
 1. **Clone the repository**
    ```bash
@@ -129,6 +129,84 @@ HomeAutomations/
 4. **View logs**
    ```bash
    docker-compose logs -f netdaemon
+   ```
+
+### Option 3: Docker Deployment (Using DockerHub Image)
+
+This is the easiest way to get started without cloning the repository.
+
+1. **Create a project directory**
+   ```bash
+   mkdir homeautomations
+   cd homeautomations
+   ```
+
+2. **Create a config directory**
+   ```bash
+   mkdir config
+   ```
+
+3. **Create docker-compose.yml**
+   
+   Create a `docker-compose.yml` file with the following content:
+   ```yaml
+   version: '3.8'
+
+   services:
+     netdaemon:
+       image: epaulsen/homeautomation:latest
+       container_name: homeautomations_netdaemon
+       restart: unless-stopped
+       environment:
+         - TZ=Europe/Oslo
+         - HomeAssistant__Host=homeassistant.local
+         - HomeAssistant__Port=8123
+         - HomeAssistant__Ssl=false
+         - HomeAssistant__Token=${HASS_TOKEN}
+       volumes:
+         - ./config:/config
+       networks:
+         - homeautomation
+
+   networks:
+     homeautomation:
+       driver: bridge
+   ```
+   
+   You can also find this example in `docker-compose.example.yml` in the repository.
+
+4. **Create .env file**
+   
+   Create a `.env` file with your Home Assistant token:
+   ```
+   HASS_TOKEN=your_long_lived_access_token_here
+   ```
+
+5. **Update environment variables**
+   
+   Edit the `docker-compose.yml` file to update:
+   - `HomeAssistant__Host`: Your Home Assistant hostname or IP address
+   - `HomeAssistant__Port`: Your Home Assistant port (default: 8123)
+   - `HomeAssistant__Ssl`: Set to `true` if using HTTPS
+   - `TZ`: Your timezone
+
+6. **Start the container**
+   ```bash
+   docker-compose up -d
+   ```
+   
+   On first run, if the `config` directory is empty, the application will create a sample `cost_sensors.yaml` file that you can edit with your sensor configurations.
+
+7. **View logs**
+   ```bash
+   docker-compose logs -f netdaemon
+   ```
+
+8. **Configure cost sensors (optional)**
+   
+   If you want to use the CostSensorApp, edit `config/cost_sensors.yaml` with your sensor IDs and restart:
+   ```bash
+   docker-compose restart netdaemon
    ```
 
 ## Creating Your Own Automations

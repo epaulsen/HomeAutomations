@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  netdaemon:
+    image: epaulsen/homeautomation:latest
+    container_name: homeautomations_netdaemon
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Oslo
+      - HomeAssistant__Host=homeassistant.local
+      - HomeAssistant__Port=8123
+      - HomeAssistant__Ssl=false
+      - HomeAssistant__Token=${HASS_TOKEN}
+    volumes:
+      # Mount a local config directory to /config for cost_sensors.yaml and other configuration files
+      - ./config:/config
+    networks:
+      - homeautomation
+
+networks:
+  homeautomation:
+    driver: bridge
