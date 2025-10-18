@@ -1,0 +1,21 @@
+# Cost sensors configuration
+# This file defines cost sensors that calculate energy costs based on tariff and energy sensors
+
+cost_sensors:
+  - name: "Living Room Cost"
+    unique_id: "sensor.living_room_energy_cost"
+    tariff: "sensor.electricity_tariff"
+    energy: "sensor.living_room_energy"
+    cron: null
+    
+  - name: "Kitchen Cost"
+    unique_id: "sensor.kitchen_energy_cost"
+    tariff: "sensor.electricity_tariff"
+    energy: "sensor.kitchen_energy"
+    cron: "daily"
+    
+  - name: "Total Energy Cost"
+    unique_id: "sensor.total_energy_cost"
+    tariff: "sensor.electricity_tariff"
+    energy: "sensor.total_energy"
+    cron: "monthly"
