@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.HassModel;
+using NetDaemon.Extensions.MqttEntityManager;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -15,14 +16,16 @@ public class CostSensorApp
 {
     private readonly IHaContext _ha;
     private readonly ILogger<CostSensorApp> _logger;
+    private readonly IMqttEntityManager _entityManager;
     private readonly Dictionary<string, double> _costSensorValues = new();
     private readonly Dictionary<string, double> _tariffSensorValues = new();
     private readonly List<IDisposable> _subscriptions = new();
 
-    public CostSensorApp(IHaContext ha, ILogger<CostSensorApp> logger)
+    public CostSensorApp(IHaContext ha, ILogger<CostSensorApp> logger, IMqttEntityManager entityManager)
     {
         _ha = ha;
         _logger = logger;
+        _entityManager = entityManager;
 
         var config = LoadConfiguration();
         
@@ -138,8 +141,56 @@ public class CostSensorApp
                 sensor.Energy, energyState);
         }
 
-        // Initialize the cost sensor value to 0
-        _costSensorValues[sensor.UniqueId] = 0.0;
+        // Check if the cost sensor entity exists in Home Assistant
+        var costSensorEntity = _ha.Entity(sensor.UniqueId);
+        var existingState = costSensorEntity.State;
+        
+        if (!string.IsNullOrEmpty(existingState) && double.TryParse(existingState, out var existingValue))
+        {
+            // Load the existing value from Home Assistant
+            _costSensorValues[sensor.UniqueId] = existingValue;
+            _logger.LogInformation("Cost sensor {UniqueId} exists in HomeAssistant with value: {Value}", 
+                sensor.UniqueId, existingValue);
+        }
+        else
+        {
+            // Initialize the cost sensor value to 0 and create the entity
+            _costSensorValues[sensor.UniqueId] = 0.0;
+            _logger.LogInformation("Cost sensor {UniqueId} does not exist in HomeAssistant, creating it", 
+                sensor.UniqueId);
+            
+            // Create the cost sensor entity using MQTT Entity Manager
+            Task.Run(async () =>
+            {
+                try
+                {
+                    await _entityManager.CreateAsync(
+                        sensor.UniqueId,
+                        new EntityCreationOptions(
+                            DeviceClass: "monetary",
+                            UniqueId: sensor.UniqueId.Replace("sensor.", ""),
+                            Name: sensor.Name,
+                            Persist: true
+                        ),
+                        new
+                        {
+                            unit_of_measurement = "kr",
+                            state_class = "measurement"
+                        }
+                    );
+                    
+                    // Set initial state to 0
+                    await _entityManager.SetStateAsync(sensor.UniqueId, "0.00");
+                    await _entityManager.SetAvailabilityAsync(sensor.UniqueId, "online");
+                    
+                    _logger.LogInformation("Successfully created cost sensor {UniqueId}", sensor.UniqueId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error creating cost sensor {UniqueId}", sensor.UniqueId);
+                }
+            }).Wait();
+        }
 
         // Subscribe to energy sensor state changes
         var energySubscription = energySensor
@@ -190,8 +241,20 @@ public class CostSensorApp
                         "Cost update for {Name}: energy delta = {Delta} kWh, tariff = {Tariff}, cost increment = {CostIncrement}, total cost = {TotalCost}",
                         sensor.Name, energyDelta, tariff, costIncrement, _costSensorValues[sensor.UniqueId]);
 
-                    // TODO: In a full implementation, we would publish this value back to Home Assistant
-                    // This would require additional NetDaemon APIs for creating/updating sensors
+                    // Update the cost sensor entity in Home Assistant
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _entityManager.SetStateAsync(sensor.UniqueId, _costSensorValues[sensor.UniqueId].ToString("F2"));
+                            _logger.LogDebug("Successfully updated cost sensor {UniqueId} to {Value} kr", 
+                                sensor.UniqueId, _costSensorValues[sensor.UniqueId]);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error updating cost sensor state for {UniqueId}", sensor.UniqueId);
+                        }
+                    }).Wait();
                 }
                 catch (Exception ex)
                 {

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using NetDaemon.HassModel;
+using NetDaemon.Extensions.MqttEntityManager;
 using HomeAutomations.Apps;
 using System.Reactive.Subjects;
 using NetDaemon.HassModel.Entities;
@@ -15,13 +16,14 @@ public class CostSensorAppTests
         // Arrange
         var mockHaContext = new Mock<IHaContext>();
         var mockLogger = new Mock<ILogger<CostSensorApp>>();
+        var mockEntityManager = new Mock<IMqttEntityManager>();
         
         // Setup StateAllChanges to return an observable that entities can use
         var stateSubject = new Subject<StateChange>();
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
 
         // Act
-        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object);
+        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object);
 
         // Assert
         Assert.NotNull(app);
@@ -48,13 +50,14 @@ public class CostSensorAppTests
         // Arrange
         var mockHaContext = new Mock<IHaContext>();
         var mockLogger = new Mock<ILogger<CostSensorApp>>();
+        var mockEntityManager = new Mock<IMqttEntityManager>();
         
         // Setup StateAllChanges to return an observable that entities can use
         var stateSubject = new Subject<StateChange>();
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
 
         // Act
-        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object);
+        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object);
 
         // Assert
         Assert.NotNull(app);
