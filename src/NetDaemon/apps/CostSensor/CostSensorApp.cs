@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reactive.Concurrency;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.HassModel;
@@ -115,7 +116,7 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
 
         try
         {
-            var yaml = File.ReadAllText(configPath);
+            var yaml = File.ReadAllText(configPath, Encoding.UTF8);
             var deserializer = new DeserializerBuilder()
                 .WithNamingConvention(UnderscoredNamingConvention.Instance)
                 .WithTypeConverter(new CronScheduleTypeConverter())

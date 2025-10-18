@@ -178,7 +178,7 @@ public class CostSensor : IDisposable
                     // Update the cost sensor entity in Home Assistant
                     try
                     {
-                        await _entityManager.SetStateAsync(_config.UniqueId, _currentCost.ToString("F2"));
+                        await _entityManager.SetStateAsync(_config.UniqueId, _currentCost.ToString("F4", CultureInfo.InvariantCulture));
                         _logger.LogDebug("Successfully updated cost sensor {UniqueId} to {Value} kr", 
                             _config.UniqueId, _currentCost);
                     }
