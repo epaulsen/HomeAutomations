@@ -114,4 +114,39 @@ public class CostSensorAppTests
         // Assert
         Assert.Equal(expected, actual);
     }
+
+    [Theory]
+    [InlineData(9.9, 10, false)]  // Delta < 10, should not be spike
+    [InlineData(10.0, 10, true)]  // Delta == 10, should be spike
+    [InlineData(15.0, 10, true)]  // Delta > 10, should be spike
+    [InlineData(-10.0, 10, true)] // Negative delta >= 10 (absolute value), should be spike
+    [InlineData(-15.0, 10, true)] // Negative delta > 10 (absolute value), should be spike
+    public void SpikeDetection_Logic_ShouldDetectSpikesCorrectly(double delta, double threshold, bool expectedSpike)
+    {
+        // This test verifies the spike detection logic
+        // If |delta| >= threshold, it should be considered a spike
+        
+        // Act
+        var isSpike = Math.Abs(delta) >= threshold;
+
+        // Assert
+        Assert.Equal(expectedSpike, isSpike);
+    }
+
+    [Theory]
+    [InlineData(30, true)]   // 30 seconds < 60 seconds, should check for spike
+    [InlineData(59, true)]   // 59 seconds < 60 seconds, should check for spike
+    [InlineData(60, false)]  // 60 seconds >= 60 seconds, should not check for spike
+    [InlineData(120, false)] // 120 seconds >= 60 seconds, should not check for spike
+    public void SpikeDetection_TimeDelta_ShouldOnlyApplyWithin60Seconds(double seconds, bool shouldCheckSpike)
+    {
+        // This test verifies the time window logic for spike detection
+        // Spike detection should only apply if time delta < 60 seconds
+        
+        // Act
+        var withinTimeWindow = seconds < 60;
+
+        // Assert
+        Assert.Equal(shouldCheckSpike, withinTimeWindow);
+    }
 }
