@@ -1,7 +1,9 @@
 using System.Globalization;
+using System.Reactive.Concurrency;
 using Microsoft.Extensions.Logging;
 using NetDaemon.HassModel;
 using NetDaemon.Extensions.MqttEntityManager;
+using NetDaemon.Extensions.Scheduler;
 
 namespace HomeAutomations.Apps.CostSensor;
 
@@ -13,21 +15,25 @@ public class CostSensor : IDisposable
     private readonly IHaContext _ha;
     private readonly IMqttEntityManager _entityManager;
     private readonly ILogger<CostSensor> _logger;
+    private readonly IScheduler _scheduler;
     private readonly PriceSensor _priceSensor;
     private readonly CostSensorEntry _config;
     private IDisposable? _subscription;
+    private IDisposable? _cronSubscription;
     private double _currentCost;
 
     public CostSensor(
         IHaContext ha, 
         IMqttEntityManager entityManager,
         ILogger<CostSensor> logger,
+        IScheduler scheduler,
         PriceSensor priceSensor,
         CostSensorEntry config)
     {
         _ha = ha;
         _entityManager = entityManager;
         _logger = logger;
+        _scheduler = scheduler;
         _priceSensor = priceSensor;
         _config = config;
     }
@@ -100,6 +106,9 @@ public class CostSensor : IDisposable
             }
         }
 
+        // Set up cron schedule for resetting the cost sensor
+        SetupCronSchedule();
+
         // Subscribe to energy sensor state changes
         _subscription = energySensor
             .StateChanges()
@@ -164,8 +173,53 @@ public class CostSensor : IDisposable
             });
     }
 
+    private void SetupCronSchedule()
+    {
+        if (_config.Cron == CronSchedule.None)
+        {
+            _logger.LogInformation("Cost sensor {Name} has no cron schedule, will not reset automatically", _config.Name);
+            return;
+        }
+
+        string cronExpression = _config.Cron switch
+        {
+            CronSchedule.Daily => "0 0 * * *",      // Every day at midnight
+            CronSchedule.Monthly => "0 0 1 * *",    // 1st of every month at midnight
+            CronSchedule.Yearly => "0 0 1 1 *",     // January 1st at midnight
+            _ => string.Empty
+        };
+
+        if (!string.IsNullOrEmpty(cronExpression))
+        {
+            _logger.LogInformation("Setting up {Schedule} reset schedule for cost sensor {Name} with cron: {Cron}", 
+                _config.Cron, _config.Name, cronExpression);
+
+            _cronSubscription = _scheduler.ScheduleCron(cronExpression, async () =>
+            {
+                _logger.LogInformation("Cron schedule triggered for {Name}, resetting cost to 0", _config.Name);
+                await ResetCostAsync();
+            });
+        }
+    }
+
+    private async Task ResetCostAsync()
+    {
+        _currentCost = 0.0;
+        
+        try
+        {
+            await _entityManager.SetStateAsync(_config.UniqueId, "0.00");
+            _logger.LogInformation("Successfully reset cost sensor {UniqueId} to 0.00", _config.UniqueId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting cost sensor {UniqueId}", _config.UniqueId);
+        }
+    }
+
     public void Dispose()
     {
         _subscription?.Dispose();
+        _cronSubscription?.Dispose();
     }
 }

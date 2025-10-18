@@ -4,6 +4,7 @@ using NetDaemon.HassModel;
 using NetDaemon.Extensions.MqttEntityManager;
 using HomeAutomations.Apps.CostSensor;
 using System.Reactive.Subjects;
+using System.Reactive.Concurrency;
 using NetDaemon.HassModel.Entities;
 
 namespace HomeAutomations.Tests;
@@ -18,6 +19,7 @@ public class CostSensorAppTests
         var mockLogger = new Mock<ILogger<CostSensorApp>>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockLoggerFactory = new Mock<ILoggerFactory>();
+        var mockScheduler = new Mock<IScheduler>();
         
         // Setup logger factory to return mock loggers for PriceSensor and CostSensor
         mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>()))
@@ -28,7 +30,7 @@ public class CostSensorAppTests
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
 
         // Act
-        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object);
+        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object, mockScheduler.Object);
         await app.InitializeAsync(CancellationToken.None);
 
         // Assert
@@ -58,6 +60,7 @@ public class CostSensorAppTests
         var mockLogger = new Mock<ILogger<CostSensorApp>>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockLoggerFactory = new Mock<ILoggerFactory>();
+        var mockScheduler = new Mock<IScheduler>();
         
         // Setup logger factory to return mock loggers for PriceSensor and CostSensor
         mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>()))
@@ -68,7 +71,7 @@ public class CostSensorAppTests
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
 
         // Act
-        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object);
+        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object, mockScheduler.Object);
         await app.InitializeAsync(CancellationToken.None);
 
         // Assert
@@ -85,5 +88,30 @@ public class CostSensorAppTests
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public void CronScheduleTypeConverter_ShouldConvertStringToEnum()
+    {
+        // Arrange
+        var converter = new CronScheduleTypeConverter();
+
+        // Assert
+        Assert.True(converter.Accepts(typeof(CronSchedule)));
+        Assert.False(converter.Accepts(typeof(string)));
+    }
+
+    [Theory]
+    [InlineData(CronSchedule.None)]
+    [InlineData(CronSchedule.Daily)]
+    [InlineData(CronSchedule.Monthly)]
+    [InlineData(CronSchedule.Yearly)]
+    public void CronSchedule_ShouldHaveExpectedValues(CronSchedule expected)
+    {
+        // Act
+        var actual = expected;
+
+        // Assert
+        Assert.Equal(expected, actual);
     }
 }

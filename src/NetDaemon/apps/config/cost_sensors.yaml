@@ -19,3 +19,9 @@ cost_sensors:
     tariff: "sensor.electricity_tariff"
     energy: "sensor.total_energy"
     cron: "monthly"
+    
+  - name: "Annual Energy Cost"
+    unique_id: "sensor.annual_energy_cost"
+    tariff: "sensor.electricity_tariff"
+    energy: "sensor.total_energy"
+    cron: "yearly"

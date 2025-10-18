@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Reactive.Concurrency;
 using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.HassModel;
@@ -19,15 +20,17 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
     private readonly ILogger<CostSensorApp> _logger;
     private readonly IMqttEntityManager _entityManager;
     private readonly ILoggerFactory _loggerFactory;
+    private readonly IScheduler _scheduler;
     private readonly Dictionary<string, PriceSensor> _priceSensors = new();
     private readonly List<CostSensor> _costSensors = new();
 
-    public CostSensorApp(IHaContext ha, ILogger<CostSensorApp> logger, IMqttEntityManager entityManager, ILoggerFactory loggerFactory)
+    public CostSensorApp(IHaContext ha, ILogger<CostSensorApp> logger, IMqttEntityManager entityManager, ILoggerFactory loggerFactory, IScheduler scheduler)
     {
         _ha = ha;
         _logger = logger;
         _entityManager = entityManager;
         _loggerFactory = loggerFactory;
+        _scheduler = scheduler;
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
@@ -88,6 +91,7 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
             _ha,
             _entityManager,
             _loggerFactory.CreateLogger<CostSensor>(),
+            _scheduler,
             priceSensor,
             sensorConfig);
 
@@ -114,6 +118,7 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
             var yaml = File.ReadAllText(configPath);
             var deserializer = new DeserializerBuilder()
                 .WithNamingConvention(UnderscoredNamingConvention.Instance)
+                .WithTypeConverter(new CronScheduleTypeConverter())
                 .Build();
 
             var config = deserializer.Deserialize<CostSensorConfig>(yaml);
@@ -151,6 +156,12 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
 #     tariff: <unique_id of tariff sensor>  # Sensor containing the price per unit (e.g., sensor.electricity_tariff)
 #     energy: <unique_id of energy sensor>  # Sensor containing energy consumption (e.g., sensor.my_energy)
 #     cron: <reset schedule>                # Optional: null, ""daily"", ""monthly"", or ""yearly""
+#
+# Cron schedules:
+#   - null (or omitted): No automatic reset
+#   - ""daily"": Reset to 0 every day at midnight
+#   - ""monthly"": Reset to 0 on the 1st of each month at midnight
+#   - ""yearly"": Reset to 0 on January 1st at midnight
 #
 # Example configuration (remove the # to enable):
 
@@ -239,7 +250,7 @@ public class CostSensorEntry
     public string Energy { get; set; } = string.Empty;
 
     /// <summary>
-    /// Reset schedule: null, "daily", "monthly", or "yearly"
+    /// Reset schedule for the cost sensor
     /// </summary>
-    public string? Cron { get; set; }
+    public CronSchedule Cron { get; set; } = CronSchedule.None;
 }
