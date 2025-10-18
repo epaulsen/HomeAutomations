@@ -1,0 +1,7 @@
+{
+  "allowed_urls": [
+    "https://netdaemon.xyz/docs/user/started/get_started/"
+  ],
+  "description": "Whitelist of URLs that GitHub Copilot agents can access for this repository",
+  "version": "1.0"
+}
