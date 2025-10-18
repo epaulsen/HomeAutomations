@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.HassModel;
@@ -25,7 +26,7 @@ public class TemperatureMonitor
             {
                 var newState = change.New?.State;
                 
-                if (double.TryParse(newState, out var temperature))
+                if (double.TryParse(newState, CultureInfo.InvariantCulture, out var temperature))
                 {
                     logger.LogDebug("Temperature changed to {Temperature}°C", temperature);
 

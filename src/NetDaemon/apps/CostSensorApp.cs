@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.HassModel;
@@ -74,7 +75,7 @@ public class CostSensorApp : IAsyncInitializable
                 _logger.LogWarning("Tariff sensor {Tariff} not found in HomeAssistant or has no state", tariffSensorId);
                 _tariffSensorValues[tariffSensorId] = 0.0;
             }
-            else if (!double.TryParse(tariffState, out var tariffValue))
+            else if (!double.TryParse(tariffState, CultureInfo.InvariantCulture, out var tariffValue))
             {
                 _logger.LogWarning("Could not parse tariff value '{TariffValue}' for {Tariff}", tariffState, tariffSensorId);
                 _tariffSensorValues[tariffSensorId] = 0.0;
@@ -101,7 +102,7 @@ public class CostSensorApp : IAsyncInitializable
                             return;
                         }
                         
-                        if (!double.TryParse(newTariff, out var tariffValue))
+                        if (!double.TryParse(newTariff, CultureInfo.InvariantCulture, out var tariffValue))
                         {
                             _logger.LogWarning("Could not parse new tariff value '{TariffValue}' for {Tariff}", 
                                 newTariff, tariffSensorId);
@@ -148,7 +149,7 @@ public class CostSensorApp : IAsyncInitializable
         var costSensorEntity = _ha.Entity(sensor.UniqueId);
         var existingState = costSensorEntity.State;
         
-        if (!string.IsNullOrEmpty(existingState) && double.TryParse(existingState, out var existingValue))
+        if (!string.IsNullOrEmpty(existingState) && double.TryParse(existingState, CultureInfo.InvariantCulture, out var existingValue))
         {
             // Load the existing value from Home Assistant
             _costSensorValues[sensor.UniqueId] = existingValue;
@@ -211,13 +212,13 @@ public class CostSensorApp : IAsyncInitializable
                     }
 
                     // Parse the old and new energy values
-                    if (!double.TryParse(oldValue, out var oldEnergy))
+                    if (!double.TryParse(oldValue, CultureInfo.InvariantCulture, out var oldEnergy))
                     {
                         _logger.LogWarning("Could not parse old value '{OldValue}' for {Sensor}", oldValue, sensor.Energy);
                         return;
                     }
 
-                    if (!double.TryParse(newValue, out var newEnergy))
+                    if (!double.TryParse(newValue, CultureInfo.InvariantCulture, out var newEnergy))
                     {
                         _logger.LogWarning("Could not parse new value '{NewValue}' for {Sensor}", newValue, sensor.Energy);
                         return;
