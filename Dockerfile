@@ -3,12 +3,12 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy project file and restore dependencies
-COPY HomeAutomations.csproj .
-RUN dotnet restore
+COPY src/NetDaemon/HomeAutomations.csproj ./src/NetDaemon/
+RUN dotnet restore src/NetDaemon/HomeAutomations.csproj
 
 # Copy everything else and build
 COPY . .
-RUN dotnet publish -c Release -o /app/publish
+RUN dotnet publish src/NetDaemon/HomeAutomations.csproj -c Release -o /app/publish
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime

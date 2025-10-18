@@ -15,7 +15,7 @@ services:
       - HomeAssistant__Token=${HASS_TOKEN}
     volumes:
       - ./src/NetDaemon/apps:/app/apps
-      - ./appsettings.local.json:/app/appsettings.local.json:ro
+      - ./src/NetDaemon/appsettings.local.json:/app/appsettings.local.json:ro
     depends_on:
       - homeassistant
     networks:

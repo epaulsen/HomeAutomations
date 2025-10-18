@@ -22,16 +22,16 @@ A NetDaemon-based home automation project for Home Assistant. This project provi
 ```
 HomeAutomations/
 ├── src/
-│   └── NetDaemon/
-│       └── apps/                      # Automation app files
-│           ├── LightAutomation.cs     # Sunrise/sunset light control
-│           ├── MotionLightAutomation.cs # Motion-activated lighting
-│           ├── TemperatureMonitor.cs  # Temperature monitoring with alerts
-│           └── example_config.yaml    # Example YAML configuration
-├── HomeAutomations.csproj             # Project file
-├── Program.cs                         # Application entry point
-├── appsettings.json                   # Base configuration
-├── appsettings.local.json.example     # Local settings template
+│   └── NetDaemon/                     # NetDaemon application directory
+│       ├── apps/                      # Automation app files
+│       │   ├── LightAutomation.cs     # Sunrise/sunset light control
+│       │   ├── MotionLightAutomation.cs # Motion-activated lighting
+│       │   ├── TemperatureMonitor.cs  # Temperature monitoring with alerts
+│       │   └── example_config.yaml    # Example YAML configuration
+│       ├── HomeAutomations.csproj     # Project file
+│       ├── Program.cs                 # Application entry point
+│       ├── appsettings.json           # Base configuration
+│       └── appsettings.local.json.example # Local settings template
 ├── Dockerfile                         # Container build file
 ├── docker-compose.yml                 # Container orchestration
 └── README.md                          # This file
@@ -51,10 +51,10 @@ HomeAutomations/
    
    Copy the example settings file:
    ```bash
-   cp appsettings.local.json.example appsettings.local.json
+   cp src/NetDaemon/appsettings.local.json.example src/NetDaemon/appsettings.local.json
    ```
    
-   Edit `appsettings.local.json` with your Home Assistant details:
+   Edit `src/NetDaemon/appsettings.local.json` with your Home Assistant details:
    ```json
    {
      "HomeAssistant": {
@@ -68,17 +68,17 @@ HomeAutomations/
 
 3. **Restore dependencies**
    ```bash
-   dotnet restore
+   dotnet restore src/NetDaemon/HomeAutomations.csproj
    ```
 
 4. **Build the project**
    ```bash
-   dotnet build
+   dotnet build src/NetDaemon/HomeAutomations.csproj
    ```
 
 5. **Run the application**
    ```bash
-   dotnet run
+   dotnet run --project src/NetDaemon/HomeAutomations.csproj
    ```
 
 ### Option 2: Docker Deployment
@@ -103,10 +103,10 @@ HomeAutomations/
    
    Copy and configure local settings:
    ```bash
-   cp appsettings.local.json.example appsettings.local.json
+   cp src/NetDaemon/appsettings.local.json.example src/NetDaemon/appsettings.local.json
    ```
    
-   Edit `appsettings.local.json` with your Home Assistant host details.
+   Edit `src/NetDaemon/appsettings.local.json` with your Home Assistant host details.
 
 3. **Build and run with Docker Compose**
    ```bash

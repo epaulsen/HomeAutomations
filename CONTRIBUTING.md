@@ -20,16 +20,16 @@ Thank you for considering contributing to this project! Here are some guidelines
 
 ### Building the Project
 ```bash
-dotnet restore
-dotnet build
+dotnet restore src/NetDaemon/HomeAutomations.csproj
+dotnet build src/NetDaemon/HomeAutomations.csproj
 ```
 
 ### Running Locally
-1. Copy `appsettings.local.json.example` to `appsettings.local.json`
+1. Copy `src/NetDaemon/appsettings.local.json.example` to `src/NetDaemon/appsettings.local.json`
 2. Fill in your Home Assistant connection details
 3. Run the application:
    ```bash
-   dotnet run
+   dotnet run --project src/NetDaemon/HomeAutomations.csproj
    ```
 
 ## Creating New Automations

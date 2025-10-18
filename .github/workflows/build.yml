@@ -19,11 +19,11 @@ jobs:
         dotnet-version: '8.0.x'
     
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore src/NetDaemon/HomeAutomations.csproj
     
     - name: Build
-      run: dotnet build --no-restore --configuration Release
+      run: dotnet build src/NetDaemon/HomeAutomations.csproj --no-restore --configuration Release
     
     - name: Test
-      run: dotnet test --no-build --configuration Release --verbosity normal
+      run: dotnet test src/NetDaemon/HomeAutomations.csproj --no-build --configuration Release --verbosity normal
       continue-on-error: true
