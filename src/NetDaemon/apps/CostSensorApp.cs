@@ -12,7 +12,7 @@ namespace HomeAutomations.Apps;
 /// Listens for energy sensor changes and calculates costs based on tariff sensors
 /// </summary>
 [NetDaemonApp]
-public class CostSensorApp
+public class CostSensorApp : IAsyncInitializable
 {
     private readonly IHaContext _ha;
     private readonly ILogger<CostSensorApp> _logger;
@@ -26,16 +26,19 @@ public class CostSensorApp
         _ha = ha;
         _logger = logger;
         _entityManager = entityManager;
+    }
 
+    public async Task InitializeAsync(CancellationToken cancellationToken)
+    {
         var config = LoadConfiguration();
         
         if (config?.CostSensors == null || config.CostSensors.Count == 0)
         {
-            logger.LogInformation("No cost sensors configured, CostSensorApp will do nothing");
+            _logger.LogInformation("No cost sensors configured, CostSensorApp will do nothing");
             return;
         }
 
-        logger.LogInformation("Initializing CostSensorApp with {Count} cost sensors", config.CostSensors.Count);
+        _logger.LogInformation("Initializing CostSensorApp with {Count} cost sensors", config.CostSensors.Count);
 
         // Initialize tariff sensors - collect unique tariff sensors and subscribe once per unique sensor
         InitializeTariffSensors(config.CostSensors);
@@ -43,10 +46,10 @@ public class CostSensorApp
         // Initialize cost sensors
         foreach (var sensor in config.CostSensors)
         {
-            InitializeCostSensor(sensor);
+            await InitializeCostSensorAsync(sensor, cancellationToken);
         }
 
-        logger.LogInformation("CostSensorApp initialized successfully");
+        _logger.LogInformation("CostSensorApp initialized successfully");
     }
 
     private void InitializeTariffSensors(List<CostSensorEntry> costSensors)
@@ -121,7 +124,7 @@ public class CostSensorApp
         }
     }
 
-    private void InitializeCostSensor(CostSensorEntry sensor)
+    private async Task InitializeCostSensorAsync(CostSensorEntry sensor, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Setting up cost sensor: {Name} (ID: {Id})", sensor.Name, sensor.UniqueId);
 
@@ -160,42 +163,39 @@ public class CostSensorApp
                 sensor.UniqueId);
             
             // Create the cost sensor entity using MQTT Entity Manager
-            Task.Run(async () =>
+            try
             {
-                try
-                {
-                    await _entityManager.CreateAsync(
-                        sensor.UniqueId,
-                        new EntityCreationOptions(
-                            DeviceClass: "monetary",
-                            UniqueId: sensor.UniqueId.Replace("sensor.", ""),
-                            Name: sensor.Name,
-                            Persist: true
-                        ),
-                        new
-                        {
-                            unit_of_measurement = "kr",
-                            state_class = "measurement"
-                        }
-                    );
-                    
-                    // Set initial state to 0
-                    await _entityManager.SetStateAsync(sensor.UniqueId, "0.00");
-                    await _entityManager.SetAvailabilityAsync(sensor.UniqueId, "online");
-                    
-                    _logger.LogInformation("Successfully created cost sensor {UniqueId}", sensor.UniqueId);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error creating cost sensor {UniqueId}", sensor.UniqueId);
-                }
-            }).Wait();
+                await _entityManager.CreateAsync(
+                    sensor.UniqueId,
+                    new EntityCreationOptions(
+                        DeviceClass: "monetary",
+                        UniqueId: sensor.UniqueId.Replace("sensor.", ""),
+                        Name: sensor.Name,
+                        Persist: true
+                    ),
+                    new
+                    {
+                        unit_of_measurement = "kr",
+                        state_class = "measurement"
+                    }
+                );
+                
+                // Set initial state to 0
+                await _entityManager.SetStateAsync(sensor.UniqueId, "0.00");
+                await _entityManager.SetAvailabilityAsync(sensor.UniqueId, "online");
+                
+                _logger.LogInformation("Successfully created cost sensor {UniqueId}", sensor.UniqueId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating cost sensor {UniqueId}", sensor.UniqueId);
+            }
         }
 
         // Subscribe to energy sensor state changes
         var energySubscription = energySensor
             .StateChanges()
-            .Subscribe(change =>
+            .SubscribeAsync(async change =>
             {
                 try
                 {
@@ -242,19 +242,16 @@ public class CostSensorApp
                         sensor.Name, energyDelta, tariff, costIncrement, _costSensorValues[sensor.UniqueId]);
 
                     // Update the cost sensor entity in Home Assistant
-                    Task.Run(async () =>
+                    try
                     {
-                        try
-                        {
-                            await _entityManager.SetStateAsync(sensor.UniqueId, _costSensorValues[sensor.UniqueId].ToString("F2"));
-                            _logger.LogDebug("Successfully updated cost sensor {UniqueId} to {Value} kr", 
-                                sensor.UniqueId, _costSensorValues[sensor.UniqueId]);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "Error updating cost sensor state for {UniqueId}", sensor.UniqueId);
-                        }
-                    }).Wait();
+                        await _entityManager.SetStateAsync(sensor.UniqueId, _costSensorValues[sensor.UniqueId].ToString("F2"));
+                        _logger.LogDebug("Successfully updated cost sensor {UniqueId} to {Value} kr", 
+                            sensor.UniqueId, _costSensorValues[sensor.UniqueId]);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error updating cost sensor state for {UniqueId}", sensor.UniqueId);
+                    }
                 }
                 catch (Exception ex)
                 {

@@ -11,7 +11,7 @@ namespace HomeAutomations.Tests;
 public class CostSensorAppTests
 {
     [Fact]
-    public void Constructor_WithConfiguration_ShouldInitialize()
+    public async Task Constructor_WithConfiguration_ShouldInitialize()
     {
         // Arrange
         var mockHaContext = new Mock<IHaContext>();
@@ -24,6 +24,7 @@ public class CostSensorAppTests
 
         // Act
         var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object);
+        await app.InitializeAsync(CancellationToken.None);
 
         // Assert
         Assert.NotNull(app);
@@ -45,7 +46,7 @@ public class CostSensorAppTests
     }
     
     [Fact]
-    public void Constructor_WithConfiguration_ShouldRetrieveSensorsFromHomeAssistant()
+    public async Task Constructor_WithConfiguration_ShouldRetrieveSensorsFromHomeAssistant()
     {
         // Arrange
         var mockHaContext = new Mock<IHaContext>();
@@ -58,6 +59,7 @@ public class CostSensorAppTests
 
         // Act
         var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object);
+        await app.InitializeAsync(CancellationToken.None);
 
         // Assert
         Assert.NotNull(app);
