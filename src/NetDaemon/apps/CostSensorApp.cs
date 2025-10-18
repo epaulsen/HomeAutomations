@@ -119,7 +119,7 @@ public class CostSensorApp
 
     private CostSensorConfig? LoadConfiguration()
     {
-        var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "apps", "cost_sensors.yaml");
+        var configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "apps", "config", "cost_sensors.yaml");
         
         _logger.LogDebug("Looking for configuration file at: {Path}", configPath);
 

@@ -24,11 +24,12 @@ HomeAutomations/
 ├── src/
 │   └── NetDaemon/                     # NetDaemon application directory
 │       ├── apps/                      # Automation app files
+│       │   ├── config/                # Configuration files
+│       │   │   └── cost_sensors.yaml  # Cost sensor configuration
 │       │   ├── CostSensorApp.cs       # Electricity cost calculation
 │       │   ├── LightAutomation.cs     # Sunrise/sunset light control
 │       │   ├── MotionLightAutomation.cs # Motion-activated lighting
 │       │   ├── TemperatureMonitor.cs  # Temperature monitoring with alerts
-│       │   ├── cost_sensors.yaml      # Cost sensor configuration
 │       │   └── example_config.yaml    # Example YAML configuration
 │       ├── HomeAutomations.csproj     # Project file
 │       ├── Program.cs                 # Application entry point
