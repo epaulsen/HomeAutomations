@@ -5,7 +5,7 @@ This repository contains a NetDaemon-based home automation project for Home Assi
 ## Project Overview
 
 - **Framework**: NetDaemon v4 (v23.44.1)
-- **Runtime**: .NET 8.0
+- **Runtime**: .NET 9.0
 - **Language**: C# with latest language version
 - **Architecture**: Event-driven automation system for Home Assistant
 - **Container**: Docker/Docker Compose support
