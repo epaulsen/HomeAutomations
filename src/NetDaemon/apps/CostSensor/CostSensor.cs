@@ -21,6 +21,7 @@ public class CostSensor : IDisposable
     private IDisposable? _subscription;
     private IDisposable? _cronSubscription;
     private double _currentCost;
+    private DateTime? _lastStateChangeTime;
 
     public CostSensor(
         IHaContext ha, 
@@ -140,11 +141,31 @@ public class CostSensor : IDisposable
                         return;
                     }
 
+                    // Calculate the energy delta
+                    var energyDelta = newEnergy - oldEnergy;
+
+                    // Spike detection: if the previous value was recorded less than 60 seconds ago
+                    // and the computed delta absolute value is 10 or above, ignore this state change
+                    var currentTime = DateTime.Now;
+                    if (_lastStateChangeTime.HasValue)
+                    {
+                        var timeDelta = currentTime - _lastStateChangeTime.Value;
+                        if (timeDelta.TotalSeconds < 60 && Math.Abs(energyDelta) >= 10)
+                        {
+                            _logger.LogWarning(
+                                "Spike detected for {Sensor}: energy delta = {Delta} kWh in {TimeDelta} seconds. Ignoring this state change.",
+                                _config.Energy, energyDelta, timeDelta.TotalSeconds);
+                            return;
+                        }
+                    }
+
+                    // Update the timestamp of the last state change
+                    _lastStateChangeTime = currentTime;
+
                     // Get the current tariff value from the price sensor
                     var tariff = _priceSensor.CurrentPrice;
 
                     // Calculate the cost increment
-                    var energyDelta = newEnergy - oldEnergy;
                     var costIncrement = energyDelta * tariff;
 
                     // Update the cost sensor value
