@@ -345,3 +345,5 @@ logs/
 *.log
 .env
 !.env.example
+
+appsettings.Development.json
