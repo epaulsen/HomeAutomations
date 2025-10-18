@@ -14,8 +14,14 @@ cost_sensors:
     energy: "sensor.kitchen_energy"
     cron: "daily"
     
-  - name: "Total Energy Cost"
-    unique_id: "sensor.total_energy_cost"
+  - name: "Monthly Energy Cost"
+    unique_id: "sensor.monthly_energy_cost"
     tariff: "sensor.electricity_tariff"
     energy: "sensor.total_energy"
     cron: "monthly"
+    
+  - name: "Yearly Energy Cost"
+    unique_id: "sensor.yearly_energy_cost"
+    tariff: "sensor.electricity_tariff"
+    energy: "sensor.total_energy"
+    cron: "yearly"

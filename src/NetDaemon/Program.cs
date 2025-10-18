@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using NetDaemon.AppModel;
 using NetDaemon.Extensions.Logging;
 using NetDaemon.Extensions.MqttEntityManager;
+using NetDaemon.Extensions.Scheduler;
 using NetDaemon.Runtime;
 using Serilog;
 
@@ -21,6 +22,7 @@ try
         {
             services
                 .AddNetDaemonStateManager()
+                .AddNetDaemonScheduler()
                 .AddNetDaemonApp<CostSensorApp>();
         })
         .UseSerilog((context, configuration) =>

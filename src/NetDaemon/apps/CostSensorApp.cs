@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.HassModel;
 using NetDaemon.Extensions.MqttEntityManager;
+using NetDaemon.Extensions.Scheduler;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -18,15 +19,17 @@ public class CostSensorApp : IAsyncInitializable
     private readonly IHaContext _ha;
     private readonly ILogger<CostSensorApp> _logger;
     private readonly IMqttEntityManager _entityManager;
+    private readonly INetDaemonScheduler _scheduler;
     private readonly Dictionary<string, double> _costSensorValues = new();
     private readonly Dictionary<string, double> _tariffSensorValues = new();
     private readonly List<IDisposable> _subscriptions = new();
 
-    public CostSensorApp(IHaContext ha, ILogger<CostSensorApp> logger, IMqttEntityManager entityManager)
+    public CostSensorApp(IHaContext ha, ILogger<CostSensorApp> logger, IMqttEntityManager entityManager, INetDaemonScheduler scheduler)
     {
         _ha = ha;
         _logger = logger;
         _entityManager = entityManager;
+        _scheduler = scheduler;
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
@@ -261,6 +264,132 @@ public class CostSensorApp : IAsyncInitializable
             });
 
         _subscriptions.Add(energySubscription);
+        
+        // Setup cron-based reset schedules
+        SetupCronSchedule(sensor);
+    }
+
+    private void SetupCronSchedule(CostSensorEntry sensor)
+    {
+        var schedule = sensor.CronSchedule;
+        
+        if (schedule == CronSchedule.None)
+        {
+            _logger.LogDebug("No cron schedule configured for {Name}", sensor.Name);
+            return;
+        }
+        
+        _logger.LogInformation("Setting up {Schedule} reset schedule for {Name}", schedule, sensor.Name);
+        
+        switch (schedule)
+        {
+            case CronSchedule.Daily:
+                // Reset daily at midnight
+                ScheduleDailyReset(sensor);
+                break;
+                
+            case CronSchedule.Monthly:
+                // Reset monthly at midnight on the first day of the month
+                ScheduleMonthlyReset(sensor);
+                break;
+                
+            case CronSchedule.Yearly:
+                // Reset yearly at midnight on January 1st
+                ScheduleYearlyReset(sensor);
+                break;
+        }
+    }
+    
+    private void ScheduleDailyReset(CostSensorEntry sensor)
+    {
+        // Calculate the next midnight
+        var now = _scheduler.Now;
+        var nextMidnight = now.Date.AddDays(1);
+        
+        // Schedule the first reset at next midnight
+        _scheduler.RunAt(nextMidnight, () =>
+        {
+            ResetCostSensor(sensor);
+            // Schedule recurring daily resets
+            _scheduler.RunEvery(TimeSpan.FromDays(1), () => ResetCostSensor(sensor));
+        });
+    }
+    
+    private void ScheduleMonthlyReset(CostSensorEntry sensor)
+    {
+        // Calculate the next first day of month at midnight
+        var now = _scheduler.Now;
+        var nextFirstOfMonth = new DateTime(now.Year, now.Month, 1).AddMonths(1);
+        
+        // Schedule the first reset
+        _scheduler.RunAt(nextFirstOfMonth, () =>
+        {
+            ResetCostSensor(sensor);
+            // Schedule next month's reset (this will be called each time)
+            ScheduleNextMonthlyReset(sensor);
+        });
+    }
+    
+    private void ScheduleNextMonthlyReset(CostSensorEntry sensor)
+    {
+        // Calculate the next first day of month at midnight
+        var now = _scheduler.Now;
+        var nextFirstOfMonth = new DateTime(now.Year, now.Month, 1).AddMonths(1);
+        
+        _scheduler.RunAt(nextFirstOfMonth, () =>
+        {
+            ResetCostSensor(sensor);
+            ScheduleNextMonthlyReset(sensor);
+        });
+    }
+    
+    private void ScheduleYearlyReset(CostSensorEntry sensor)
+    {
+        // Calculate the next January 1st at midnight
+        var now = _scheduler.Now;
+        var nextNewYear = new DateTime(now.Year + 1, 1, 1);
+        
+        // Schedule the first reset
+        _scheduler.RunAt(nextNewYear, () =>
+        {
+            ResetCostSensor(sensor);
+            // Schedule next year's reset
+            ScheduleNextYearlyReset(sensor);
+        });
+    }
+    
+    private void ScheduleNextYearlyReset(CostSensorEntry sensor)
+    {
+        // Calculate the next January 1st at midnight
+        var now = _scheduler.Now;
+        var nextNewYear = new DateTime(now.Year + 1, 1, 1);
+        
+        _scheduler.RunAt(nextNewYear, () =>
+        {
+            ResetCostSensor(sensor);
+            ScheduleNextYearlyReset(sensor);
+        });
+    }
+    
+    private async void ResetCostSensor(CostSensorEntry sensor)
+    {
+        try
+        {
+            _logger.LogInformation("Resetting cost sensor {Name} (ID: {Id}) to 0.00 due to {Schedule} schedule", 
+                sensor.Name, sensor.UniqueId, sensor.CronSchedule);
+            
+            // Reset the in-memory value
+            _costSensorValues[sensor.UniqueId] = 0.0;
+            
+            // Update the sensor state in Home Assistant
+            await _entityManager.SetStateAsync(sensor.UniqueId, "0.00");
+            
+            _logger.LogInformation("Successfully reset cost sensor {Name} to 0.00", sensor.Name);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting cost sensor {Name} (ID: {Id})", sensor.Name, sensor.UniqueId);
+        }
     }
 
     private CostSensorConfig? LoadConfiguration()
@@ -320,6 +449,12 @@ public class CostSensorApp : IAsyncInitializable
 #     energy: <unique_id of energy sensor>  # Sensor containing energy consumption (e.g., sensor.my_energy)
 #     cron: <reset schedule>                # Optional: null, ""daily"", ""monthly"", or ""yearly""
 #
+# Cron reset schedules:
+#   - null: No automatic reset
+#   - ""daily"": Resets to 0.0 at midnight every day
+#   - ""monthly"": Resets to 0.0 at midnight on the first day of each month
+#   - ""yearly"": Resets to 0.0 at midnight on January 1st
+#
 # Example configuration (remove the # to enable):
 
 # cost_sensors:
@@ -335,11 +470,17 @@ public class CostSensorApp : IAsyncInitializable
 #     energy: ""sensor.kitchen_energy""
 #     cron: ""daily""
 #
-#   - name: ""Total Energy Cost""
-#     unique_id: ""sensor.total_energy_cost""
+#   - name: ""Monthly Energy Cost""
+#     unique_id: ""sensor.monthly_energy_cost""
 #     tariff: ""sensor.electricity_tariff""
 #     energy: ""sensor.total_energy""
 #     cron: ""monthly""
+#
+#   - name: ""Yearly Energy Cost""
+#     unique_id: ""sensor.yearly_energy_cost""
+#     tariff: ""sensor.electricity_tariff""
+#     energy: ""sensor.total_energy""
+#     cron: ""yearly""
 
 # To activate this configuration:
 # 1. Uncomment the 'cost_sensors:' line and the sensor entries below it
@@ -354,6 +495,32 @@ public class CostSensorApp : IAsyncInitializable
             _logger.LogError(ex, "Error creating sample configuration at {Path}", configPath);
         }
     }
+}
+
+/// <summary>
+/// Cron schedule types for resetting cost sensors
+/// </summary>
+public enum CronSchedule
+{
+    /// <summary>
+    /// No scheduled reset
+    /// </summary>
+    None,
+    
+    /// <summary>
+    /// Reset daily at midnight
+    /// </summary>
+    Daily,
+    
+    /// <summary>
+    /// Reset monthly at midnight on the first day of the month
+    /// </summary>
+    Monthly,
+    
+    /// <summary>
+    /// Reset yearly at midnight on January 1st
+    /// </summary>
+    Yearly
 }
 
 /// <summary>
@@ -393,4 +560,23 @@ public class CostSensorEntry
     /// Reset schedule: null, "daily", "monthly", or "yearly"
     /// </summary>
     public string? Cron { get; set; }
+    
+    /// <summary>
+    /// Gets the parsed cron schedule from the Cron string property
+    /// </summary>
+    public CronSchedule CronSchedule => ParseCronSchedule(Cron);
+    
+    private static CronSchedule ParseCronSchedule(string? cronValue)
+    {
+        if (string.IsNullOrWhiteSpace(cronValue))
+            return CronSchedule.None;
+            
+        return cronValue.ToLowerInvariant() switch
+        {
+            "daily" => CronSchedule.Daily,
+            "monthly" => CronSchedule.Monthly,
+            "yearly" => CronSchedule.Yearly,
+            _ => CronSchedule.None
+        };
+    }
 }

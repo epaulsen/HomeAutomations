@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using NetDaemon.HassModel;
 using NetDaemon.Extensions.MqttEntityManager;
+using NetDaemon.Extensions.Scheduler;
 using HomeAutomations.Apps;
 using System.Reactive.Subjects;
 using NetDaemon.HassModel.Entities;
@@ -17,13 +18,15 @@ public class CostSensorAppTests
         var mockHaContext = new Mock<IHaContext>();
         var mockLogger = new Mock<ILogger<CostSensorApp>>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
+        var mockScheduler = new Mock<INetDaemonScheduler>();
+        mockScheduler.Setup(x => x.Now).Returns(DateTimeOffset.Now);
         
         // Setup StateAllChanges to return an observable that entities can use
         var stateSubject = new Subject<StateChange>();
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
 
         // Act
-        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object);
+        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockScheduler.Object);
         await app.InitializeAsync(CancellationToken.None);
 
         // Assert
@@ -52,13 +55,15 @@ public class CostSensorAppTests
         var mockHaContext = new Mock<IHaContext>();
         var mockLogger = new Mock<ILogger<CostSensorApp>>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
+        var mockScheduler = new Mock<INetDaemonScheduler>();
+        mockScheduler.Setup(x => x.Now).Returns(DateTimeOffset.Now);
         
         // Setup StateAllChanges to return an observable that entities can use
         var stateSubject = new Subject<StateChange>();
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
 
         // Act
-        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object);
+        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockScheduler.Object);
         await app.InitializeAsync(CancellationToken.None);
 
         // Assert
