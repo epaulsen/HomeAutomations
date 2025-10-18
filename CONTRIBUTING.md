@@ -35,7 +35,7 @@ dotnet build
 ## Creating New Automations
 
 ### Basic Structure
-1. Create a new C# file in the `apps/` directory
+1. Create a new C# file in the `src/NetDaemon/apps/` directory
 2. Add the `[NetDaemonApp]` attribute to your class
 3. Inject `IHaContext` and `ILogger<YourClass>` in the constructor
 4. Subscribe to Home Assistant events or state changes

@@ -1,5 +1,5 @@
 # Example configuration for NetDaemon apps
-# Place YAML files in the apps/ directory alongside C# files
+# Place YAML files in the src/NetDaemon/apps/ directory alongside C# files
 
 # Example: Light automation configuration
 # light_automation:

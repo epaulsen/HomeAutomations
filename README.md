@@ -21,17 +21,20 @@ A NetDaemon-based home automation project for Home Assistant. This project provi
 
 ```
 HomeAutomations/
-├── apps/                           # Automation app files
-│   ├── LightAutomation.cs         # Sunrise/sunset light control
-│   ├── MotionLightAutomation.cs   # Motion-activated lighting
-│   └── TemperatureMonitor.cs      # Temperature monitoring with alerts
-├── HomeAutomations.csproj          # Project file
-├── Program.cs                      # Application entry point
-├── appsettings.json                # Base configuration
-├── appsettings.local.json.example  # Local settings template
-├── Dockerfile                      # Container build file
-├── docker-compose.yml              # Container orchestration
-└── README.md                       # This file
+├── src/
+│   └── NetDaemon/
+│       └── apps/                      # Automation app files
+│           ├── LightAutomation.cs     # Sunrise/sunset light control
+│           ├── MotionLightAutomation.cs # Motion-activated lighting
+│           ├── TemperatureMonitor.cs  # Temperature monitoring with alerts
+│           └── example_config.yaml    # Example YAML configuration
+├── HomeAutomations.csproj             # Project file
+├── Program.cs                         # Application entry point
+├── appsettings.json                   # Base configuration
+├── appsettings.local.json.example     # Local settings template
+├── Dockerfile                         # Container build file
+├── docker-compose.yml                 # Container orchestration
+└── README.md                          # This file
 ```
 
 ## Getting Started
@@ -119,7 +122,7 @@ HomeAutomations/
 
 To create a new automation:
 
-1. Create a new C# class in the `apps/` directory
+1. Create a new C# class in the `src/NetDaemon/apps/` directory
 2. Add the `[NetDaemonApp]` attribute to your class
 3. Inject `IHaContext` and `ILogger<YourClass>` in the constructor
 4. Subscribe to Home Assistant events or state changes
