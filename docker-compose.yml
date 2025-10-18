@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  netdaemon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: homeautomations_netdaemon
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Oslo
+      - HomeAssistant__Host=homeassistant
+      - HomeAssistant__Port=8123
+      - HomeAssistant__Ssl=false
+      - HomeAssistant__Token=${HASS_TOKEN}
+    volumes:
+      - ./apps:/app/apps
+      - ./appsettings.local.json:/app/appsettings.local.json:ro
+    depends_on:
+      - homeassistant
+    networks:
+      - homeautomation
+
+  # Optional: Home Assistant service for testing
+  # Uncomment if you want to run Home Assistant locally
+  # homeassistant:
+  #   image: ghcr.io/home-assistant/home-assistant:stable
+  #   container_name: homeassistant
+  #   restart: unless-stopped
+  #   privileged: true
+  #   volumes:
+  #     - ./homeassistant/config:/config
+  #   environment:
+  #     - TZ=Europe/Oslo
+  #   ports:
+  #     - "8123:8123"
+  #   networks:
+  #     - homeautomation
+
+networks:
+  homeautomation:
+    driver: bridge
