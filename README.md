@@ -24,6 +24,9 @@ HomeAutomations/
 ├── src/
 │   └── NetDaemon/                     # NetDaemon application directory
 │       ├── apps/                      # Automation app files
+│       │   ├── config/                # Configuration files
+│       │   │   └── cost_sensors.yaml  # Cost sensor configuration
+│       │   ├── CostSensorApp.cs       # Electricity cost calculation
 │       │   ├── LightAutomation.cs     # Sunrise/sunset light control
 │       │   ├── MotionLightAutomation.cs # Motion-activated lighting
 │       │   ├── TemperatureMonitor.cs  # Temperature monitoring with alerts
@@ -177,6 +180,14 @@ Monitors temperature and sends notifications:
 - Sends alert when temperature exceeds 25°C
 - Sends alert when temperature drops below 18°C
 - Notifies when temperature returns to normal
+
+### CostSensorApp
+Manages electricity cost calculations:
+- Listens to energy sensor changes and calculates costs based on tariff sensors
+- Configured via `cost_sensors.yaml` file
+- Supports multiple cost sensors with individual tariff and energy sensors
+- Handles first state change events gracefully (skips when no old value)
+- Includes optional cron field for future reset schedule functionality
 
 **Note**: These examples use placeholder entity IDs. Update them in the respective files to match your Home Assistant entities.
 
