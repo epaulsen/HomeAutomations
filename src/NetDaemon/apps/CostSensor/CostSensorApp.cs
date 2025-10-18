@@ -6,7 +6,7 @@ using NetDaemon.Extensions.MqttEntityManager;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace HomeAutomations.Apps;
+namespace HomeAutomations.Apps.CostSensor;
 
 /// <summary>
 /// App to manage electricity cost sensors

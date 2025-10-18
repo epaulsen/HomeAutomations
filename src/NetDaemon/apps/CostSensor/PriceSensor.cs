@@ -2,7 +2,7 @@ using System.Globalization;
 using Microsoft.Extensions.Logging;
 using NetDaemon.HassModel;
 
-namespace HomeAutomations.Apps;
+namespace HomeAutomations.Apps.CostSensor;
 
 /// <summary>
 /// Manages a price/tariff sensor and exposes its current value

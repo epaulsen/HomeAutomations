@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using NetDaemon.HassModel;
 using NetDaemon.Extensions.MqttEntityManager;
-using HomeAutomations.Apps;
+using HomeAutomations.Apps.CostSensor;
 using System.Reactive.Subjects;
 using NetDaemon.HassModel.Entities;
 

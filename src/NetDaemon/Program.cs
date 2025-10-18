@@ -1,4 +1,5 @@
 ﻿using HomeAutomations.Apps;
+using HomeAutomations.Apps.CostSensor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using NetDaemon.AppModel;

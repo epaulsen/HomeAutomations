@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using NetDaemon.HassModel;
 using NetDaemon.Extensions.MqttEntityManager;
 
-namespace HomeAutomations.Apps;
+namespace HomeAutomations.Apps.CostSensor;
 
 /// <summary>
 /// Manages a cost sensor that tracks energy costs based on a price sensor and energy sensor
