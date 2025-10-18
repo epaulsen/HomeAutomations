@@ -343,3 +343,5 @@ appsettings.local.json
 secrets.json
 logs/
 *.log
+.env
+!.env.example

@@ -1,0 +1,23 @@
+# Example configuration for NetDaemon apps
+# Place YAML files in the apps/ directory alongside C# files
+
+# Example: Light automation configuration
+# light_automation:
+#   entities:
+#     - light.living_room
+#     - light.kitchen
+#   sun_entity: sun.sun
+
+# Example: Motion light configuration
+# motion_light:
+#   motion_sensor: binary_sensor.motion_sensor
+#   light: light.hallway
+#   timeout_minutes: 5
+#   brightness: 255
+
+# Example: Temperature monitoring configuration
+# temperature_monitor:
+#   sensor: sensor.living_room_temperature
+#   high_threshold: 25
+#   low_threshold: 18
+#   notification_service: notify.mobile_app
