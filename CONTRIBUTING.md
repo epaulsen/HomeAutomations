@@ -95,7 +95,7 @@ public class MyAutomation
 ## Testing
 
 ### Unit Tests
-The project includes a test suite using xUnit, Moq, and FluentAssertions:
+The project includes a test suite using xUnit and Moq:
 
 - Test your automations thoroughly before submitting
 - Write unit tests for new automation classes
@@ -107,11 +107,10 @@ The project includes a test suite using xUnit, Moq, and FluentAssertions:
 1. Create test files in the `tests/HomeAutomations.Tests/` directory
 2. Follow the naming convention: `<ClassName>Tests.cs`
 3. Use Moq to mock `IHaContext` and `ILogger` dependencies
-4. Use FluentAssertions for readable assertions
+4. Use xUnit's `Assert` class for assertions
 
 Example test:
 ```csharp
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NetDaemon.HassModel;
@@ -137,7 +136,7 @@ public class MyAutomationTests
         var automation = new MyAutomation(mockHaContext.Object, mockLogger.Object);
 
         // Assert
-        automation.Should().NotBeNull();
+        Assert.NotNull(automation);
     }
 }
 ```

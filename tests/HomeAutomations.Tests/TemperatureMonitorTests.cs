@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NetDaemon.HassModel;
@@ -25,7 +24,7 @@ public class TemperatureMonitorTests
         var monitor = new TemperatureMonitor(mockHaContext.Object, mockLogger.Object);
 
         // Assert
-        monitor.Should().NotBeNull();
+        Assert.NotNull(monitor);
         mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NetDaemon.HassModel;
@@ -25,7 +24,7 @@ public class MotionLightAutomationTests
         var automation = new MotionLightAutomation(mockHaContext.Object, mockLogger.Object);
 
         // Assert
-        automation.Should().NotBeNull();
+        Assert.NotNull(automation);
         mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
