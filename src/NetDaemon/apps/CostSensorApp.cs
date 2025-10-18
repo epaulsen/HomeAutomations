@@ -45,11 +45,39 @@ public class CostSensorApp
     {
         _logger.LogInformation("Setting up cost sensor: {Name} (ID: {Id})", sensor.Name, sensor.UniqueId);
 
+        // Fetch and verify sensors from HomeAssistant
+        var energySensor = _ha.Entity(sensor.Energy);
+        var tariffSensor = _ha.Entity(sensor.Tariff);
+        
+        // Verify sensors exist by checking their state
+        var energyState = energySensor.State;
+        var tariffState = tariffSensor.State;
+        
+        if (energyState == null)
+        {
+            _logger.LogWarning("Energy sensor {Energy} not found in HomeAssistant or has no state", sensor.Energy);
+        }
+        else
+        {
+            _logger.LogInformation("Retrieved energy sensor {Energy} from HomeAssistant with current state: {State}", 
+                sensor.Energy, energyState);
+        }
+        
+        if (tariffState == null)
+        {
+            _logger.LogWarning("Tariff sensor {Tariff} not found in HomeAssistant or has no state", sensor.Tariff);
+        }
+        else
+        {
+            _logger.LogInformation("Retrieved tariff sensor {Tariff} from HomeAssistant with current state: {State}", 
+                sensor.Tariff, tariffState);
+        }
+
         // Initialize the cost sensor value to 0
         _costSensorValues[sensor.UniqueId] = 0.0;
 
         // Subscribe to energy sensor state changes
-        var subscription = _ha.Entity(sensor.Energy)
+        var energySubscription = energySensor
             .StateChanges()
             .Subscribe(change =>
             {
@@ -79,18 +107,18 @@ public class CostSensorApp
                         return;
                     }
 
-                    // Get the tariff sensor value
-                    var tariffState = _ha.Entity(sensor.Tariff).State;
-                    if (tariffState == null)
+                    // Get the current tariff sensor value
+                    var currentTariffState = tariffSensor.State;
+                    if (currentTariffState == null)
                     {
                         _logger.LogWarning("Tariff sensor {Tariff} has no state", sensor.Tariff);
                         return;
                     }
 
-                    if (!double.TryParse(tariffState, out var tariff))
+                    if (!double.TryParse(currentTariffState, out var tariff))
                     {
                         _logger.LogWarning("Could not parse tariff value '{TariffValue}' for {Tariff}", 
-                            tariffState, sensor.Tariff);
+                            currentTariffState, sensor.Tariff);
                         return;
                     }
 
@@ -114,7 +142,44 @@ public class CostSensorApp
                 }
             });
 
-        _subscriptions.Add(subscription);
+        _subscriptions.Add(energySubscription);
+        
+        // Subscribe to tariff sensor state changes to recalculate when tariff changes
+        var tariffSubscription = tariffSensor
+            .StateChanges()
+            .Subscribe(change =>
+            {
+                try
+                {
+                    var newTariff = change.New?.State;
+                    
+                    if (string.IsNullOrEmpty(newTariff))
+                    {
+                        _logger.LogDebug("Tariff sensor {Tariff} state change has no new value", sensor.Tariff);
+                        return;
+                    }
+                    
+                    if (!double.TryParse(newTariff, out var tariffValue))
+                    {
+                        _logger.LogWarning("Could not parse new tariff value '{TariffValue}' for {Tariff}", 
+                            newTariff, sensor.Tariff);
+                        return;
+                    }
+                    
+                    _logger.LogInformation(
+                        "Tariff sensor {Tariff} changed to {NewTariff} for cost sensor {Name}",
+                        sensor.Tariff, tariffValue, sensor.Name);
+                    
+                    // Note: We don't recalculate historical costs when tariff changes
+                    // The new tariff will be used for subsequent energy consumption calculations
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error processing tariff state change for {Sensor}", sensor.Tariff);
+                }
+            });
+
+        _subscriptions.Add(tariffSubscription);
     }
 
     private CostSensorConfig? LoadConfiguration()
