@@ -53,8 +53,8 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
 FROM mcr.microsoft.com/dotnet/runtime-deps:9.0-alpine AS runtime
 WORKDIR /app
 
-# Install ICU libraries for globalization support
-RUN apk add --no-cache icu-libs
+# Install ICU libraries for globalization support and timezone data
+RUN apk add --no-cache icu-libs tzdata
 
 # Copy built application
 COPY --from=build /app/publish .
