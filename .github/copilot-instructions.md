@@ -51,9 +51,9 @@ Both URLs are **whitelisted and actively encouraged** for GitHub Copilot to acce
 ```
 src/NetDaemon/
 ├── apps/                    # Automation applications
-│   ├── LightAutomation.cs
-│   ├── MotionLightAutomation.cs
-│   └── TemperatureMonitor.cs
+│   ├── CostSensor/          # Cost sensor automation
+│   ├── NordPoolApp/         # NordPool sensor automation
+│   └── config/              # Configuration files
 ├── HomeAutomations.csproj   # Project file
 ├── Program.cs               # Application entry point
 └── appsettings.json         # Configuration
