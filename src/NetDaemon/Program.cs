@@ -36,7 +36,7 @@ try
                 }).Services
                 .AddNetDaemonStateManager()
                 .AddNetDaemonScheduler()
-                //.AddNetDaemonApp<CostSensorApp>();
+                .AddNetDaemonApp<CostSensorApp>()
                 .AddNetDaemonApp<NordPoolSensorApp>();
         })
         .UseSerilog((context, configuration) =>
