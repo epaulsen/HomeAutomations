@@ -8,7 +8,7 @@ A NetDaemon-based home automation project for Home Assistant. This project provi
 - **Type-Safe**: Leverage C#'s type safety and IntelliSense for writing automations
 - **Extensible**: Easy to add new automations as C# classes
 - **Containerized**: Docker support for easy deployment
-- **Example Automations**: Includes several example automations to get you started
+- **Cost Tracking**: Electricity cost calculation automations
 
 ## Prerequisites
 
@@ -26,10 +26,8 @@ HomeAutomations/
 │       ├── apps/                      # Automation app files
 │       │   ├── config/                # Configuration files
 │       │   │   └── cost_sensors.yaml  # Cost sensor configuration
-│       │   ├── CostSensorApp.cs       # Electricity cost calculation
-│       │   ├── LightAutomation.cs     # Sunrise/sunset light control
-│       │   ├── MotionLightAutomation.cs # Motion-activated lighting
-│       │   ├── TemperatureMonitor.cs  # Temperature monitoring with alerts
+│       │   ├── CostSensor/            # Cost sensor automation
+│       │   ├── NordPoolApp/           # NordPool sensor automation
 │       │   └── example_config.yaml    # Example YAML configuration
 │       ├── HomeAutomations.csproj     # Project file
 │       ├── Program.cs                 # Application entry point
@@ -251,23 +249,7 @@ public class MyAutomation
 }
 ```
 
-## Included Example Automations
-
-### LightAutomation
-Automatically controls lights based on sunrise and sunset:
-- Turns on living room lights at sunset
-- Turns off living room lights at sunrise
-
-### MotionLightAutomation
-Motion-activated lighting:
-- Turns on hallway lights when motion is detected
-- Turns off lights 5 minutes after motion clears
-
-### TemperatureMonitor
-Monitors temperature and sends notifications:
-- Sends alert when temperature exceeds 25°C
-- Sends alert when temperature drops below 18°C
-- Notifies when temperature returns to normal
+## Included Automations
 
 ### CostSensorApp
 Manages electricity cost calculations:
@@ -277,7 +259,13 @@ Manages electricity cost calculations:
 - Handles first state change events gracefully (skips when no old value)
 - Includes optional cron field for future reset schedule functionality
 
-**Note**: These examples use placeholder entity IDs. Update them in the respective files to match your Home Assistant entities.
+### NordPoolSensorApp
+Provides NordPool electricity price sensors:
+- Fetches electricity prices from NordPool API
+- Creates sensors for current and subsidized prices
+- Updates price data periodically
+
+**Note**: Update entity IDs and configuration to match your Home Assistant entities.
 
 ## Configuration
 
