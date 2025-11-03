@@ -5,6 +5,7 @@ using NetDaemon.Extensions.MqttEntityManager;
 using HomeAutomations.Apps.CostSensor;
 using System.Reactive.Subjects;
 using System.Reactive.Concurrency;
+using HomeAutomations.Models;
 using NetDaemon.HassModel.Entities;
 
 namespace HomeAutomations.Tests;

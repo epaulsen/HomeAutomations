@@ -1,3 +1,4 @@
+using HomeAutomations.Models;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;

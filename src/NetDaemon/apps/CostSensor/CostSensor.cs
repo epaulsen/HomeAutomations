@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reactive.Concurrency;
+using HomeAutomations.Models;
 using Microsoft.Extensions.Logging;
 using NetDaemon.HassModel;
 using NetDaemon.Extensions.MqttEntityManager;
