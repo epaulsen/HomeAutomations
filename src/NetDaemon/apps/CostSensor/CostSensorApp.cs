@@ -38,7 +38,7 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
         var config = LoadConfiguration();
-        
+
         if (config?.CostSensors == null || config.CostSensors.Count == 0)
         {
             _logger.LogInformation("No cost sensors configured, CostSensorApp will do nothing");
@@ -75,7 +75,7 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
                 _ha,
                 _loggerFactory.CreateLogger<PriceSensor>(),
                 tariffSensorId);
-            
+
             _priceSensors[tariffSensorId] = priceSensor;
         }
     }
@@ -104,12 +104,12 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
     private CostSensorConfig? LoadConfiguration()
     {
         var configPath = GetConfigurationPath();
-        
+
         if (configPath == null)
         {
             return null;
         }
-        
+
         _logger.LogDebug("Looking for configuration file at: {Path}", configPath);
 
         if (!File.Exists(configPath))
@@ -129,9 +129,9 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
                 .Build();
 
             var config = deserializer.Deserialize<CostSensorConfig>(yaml);
-            _logger.LogInformation("Successfully loaded configuration with {Count} cost sensors", 
+            _logger.LogInformation("Successfully loaded configuration with {Count} cost sensors",
                 config?.CostSensors?.Count ?? 0);
-            
+
             return config;
         }
         catch (Exception ex)
@@ -145,12 +145,12 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
     {
         // Check if running in a container
         var runningInContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
-        
+
         if (bool.TryParse(runningInContainer, out var isContainer) && isContainer)
         {
             _logger.LogInformation("Running in container, using /config directory");
             var configDir = "/config";
-            
+
             if (!Directory.Exists(configDir))
             {
                 _logger.LogError("Configuration directory {ConfigDir} does not exist. " +
@@ -159,10 +159,10 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
                 Environment.Exit(1);
                 return null;
             }
-            
+
             return Path.Combine(configDir, "cost_sensors.yaml");
         }
-        
+
         // Default behavior for non-container environments
         return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "apps", "config", "cost_sensors.yaml");
     }

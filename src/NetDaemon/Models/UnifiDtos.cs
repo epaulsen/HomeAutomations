@@ -88,7 +88,7 @@ public class ClientDevice : IEquatable<ClientDevice>, IComparable<ClientDevice>
     }
 }
 
-public class AccessInfo :IEquatable<AccessInfo>, IEqualityComparer<AccessInfo>
+public class AccessInfo : IEquatable<AccessInfo>, IEqualityComparer<AccessInfo>
 {
     [JsonPropertyName("type")]
     public string? Type { get; set; }

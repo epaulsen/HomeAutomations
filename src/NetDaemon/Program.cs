@@ -60,10 +60,10 @@ try
                 .AddNetDaemonStateManager()
                 .AddNetDaemonScheduler()
                 .AddNetDaemonApp<DeviceTrackerApp>()
-                .AddNetDaemonApp<CostSensorApp>()      
+                .AddNetDaemonApp<CostSensorApp>()
                 .AddNetDaemonApp<NordPoolSensorApp>()
                 ;
-                
+
         })
         .UseSerilog((context, configuration) =>
         {

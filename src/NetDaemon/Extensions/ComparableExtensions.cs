@@ -10,8 +10,8 @@ public static class ComparableExtensions
         {
             if (list.Count != other.Count) return false;
 
-            var set1 = new HashSet<ClientDevice>(list.OrderBy(d=>d.Id));
-            var set2 = new HashSet<ClientDevice>(other.OrderBy(d=>d.Id));
+            var set1 = new HashSet<ClientDevice>(list.OrderBy(d => d.Id));
+            var set2 = new HashSet<ClientDevice>(other.OrderBy(d => d.Id));
 
             return set1.SetEquals(set2);
         }
@@ -20,7 +20,7 @@ public static class ComparableExtensions
             Console.WriteLine(e);
             throw;
         }
-        
+
 
     }
 }

@@ -14,11 +14,11 @@ public class UnifiBackgroundService(
     INetDaemonScheduler scheduler,
     IOptions<UnifiConfig> config,
     IServiceScopeFactory serviceScopeFactory,
-    UnifiData data, 
+    UnifiData data,
     ILogger<UnifiBackgroundService> logger) : IHostedService
 {
     private IDisposable? _schedule = null;
-    
+
     public Task StartAsync(CancellationToken cancellationToken)
     {
         _schedule = scheduler.RunEvery(TimeSpan.FromSeconds(config.Value.PollIntervalSeconds),
@@ -37,7 +37,7 @@ public class UnifiBackgroundService(
                     logger.LogError(e, "Failed to poll unifi controller");
                 }
             });
-        
+
         return Task.CompletedTask;
     }
 

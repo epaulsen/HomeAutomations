@@ -25,7 +25,7 @@ public class CostSensor : IDisposable
     private DateTime? _lastStateChangeTime;
 
     public CostSensor(
-        IHaContext ha, 
+        IHaContext ha,
         IMqttEntityManager entityManager,
         ILogger<CostSensor> logger,
         IScheduler scheduler,
@@ -46,38 +46,38 @@ public class CostSensor : IDisposable
 
         // Fetch and verify energy sensor from HomeAssistant
         var energySensor = _ha.Entity(_config.Energy);
-        
+
         // Verify energy sensor exists by checking its state
         var energyState = energySensor.State;
-        
+
         if (energyState == null)
         {
             _logger.LogWarning("Energy sensor {Energy} not found in HomeAssistant or has no state", _config.Energy);
         }
         else
         {
-            _logger.LogInformation("Retrieved energy sensor {Energy} from HomeAssistant with current state: {State}", 
+            _logger.LogInformation("Retrieved energy sensor {Energy} from HomeAssistant with current state: {State}",
                 _config.Energy, energyState);
         }
 
         // Check if the cost sensor entity exists in Home Assistant
         var costSensorEntity = _ha.Entity(_config.UniqueId);
         var existingState = costSensorEntity.State;
-        
+
         if (!string.IsNullOrEmpty(existingState) && double.TryParse(existingState, CultureInfo.InvariantCulture, out var existingValue))
         {
             // Load the existing value from Home Assistant
             _currentCost = existingValue;
-            _logger.LogInformation("Cost sensor {UniqueId} exists in HomeAssistant with value: {Value}", 
+            _logger.LogInformation("Cost sensor {UniqueId} exists in HomeAssistant with value: {Value}",
                 _config.UniqueId, existingValue);
         }
         else
         {
             // Initialize the cost sensor value to 0 and create the entity
             _currentCost = 0.0;
-            _logger.LogInformation("Cost sensor {UniqueId} does not exist in HomeAssistant, creating it", 
+            _logger.LogInformation("Cost sensor {UniqueId} does not exist in HomeAssistant, creating it",
                 _config.UniqueId);
-            
+
             // Create the cost sensor entity using MQTT Entity Manager
             try
             {
@@ -95,11 +95,11 @@ public class CostSensor : IDisposable
                         state_class = "measurement"
                     }
                 );
-                
+
                 // Set initial state to 0
                 await _entityManager.SetStateAsync(_config.UniqueId, "0.00");
                 await _entityManager.SetAvailabilityAsync(_config.UniqueId, "online");
-                
+
                 _logger.LogInformation("Successfully created cost sensor {UniqueId}", _config.UniqueId);
             }
             catch (Exception ex)
@@ -180,7 +180,7 @@ public class CostSensor : IDisposable
                     try
                     {
                         await _entityManager.SetStateAsync(_config.UniqueId, _currentCost.ToString("F4", CultureInfo.InvariantCulture));
-                        _logger.LogDebug("Successfully updated cost sensor {UniqueId} to {Value} kr", 
+                        _logger.LogDebug("Successfully updated cost sensor {UniqueId} to {Value} kr",
                             _config.UniqueId, _currentCost);
                     }
                     catch (Exception ex)
@@ -213,7 +213,7 @@ public class CostSensor : IDisposable
 
         if (!string.IsNullOrEmpty(cronExpression))
         {
-            _logger.LogInformation("Setting up {Schedule} reset schedule for cost sensor {Name} with cron: {Cron}", 
+            _logger.LogInformation("Setting up {Schedule} reset schedule for cost sensor {Name} with cron: {Cron}",
                 _config.Cron, _config.Name, cronExpression);
 
             _cronSubscription = _scheduler.ScheduleCron(cronExpression, async () =>
@@ -227,7 +227,7 @@ public class CostSensor : IDisposable
     private async Task ResetCostAsync()
     {
         _currentCost = 0.0;
-        
+
         try
         {
             await _entityManager.SetStateAsync(_config.UniqueId, "0.00");

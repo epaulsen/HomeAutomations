@@ -10,7 +10,7 @@ public class DeviceTracker(
     DeviceTrackerConfig config)
 {
     private string? state = null;
-    
+
     public async Task InitializeAsync()
     {
         var trackerEntity = context.Entity(config.UniqueId);

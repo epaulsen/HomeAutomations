@@ -18,7 +18,7 @@ public class IpTests
                 new NetworkConfig() { Name = "Guest", Vlan = "192.168.10.0/24" },
                 new NetworkConfig() { Name = "IOT", Vlan = "192.168.55.0/24" },
             ],
-            Trackers = 
+            Trackers =
             [
                 new DeviceTrackerConfig() {Name = "Erling iPhone", MacAddress = "3c:6d:89:86:ba:a6"}
             ]
@@ -29,6 +29,6 @@ public class IpTests
             .Build();
         var yaml = serializer.Serialize(uc);
         Debug.WriteLine(yaml);
-        
+
     }
 }

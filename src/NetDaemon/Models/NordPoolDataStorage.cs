@@ -8,41 +8,41 @@ namespace HomeAutomations.Models;
 public class NordPoolDataStorage
 {
     private static readonly TimeZoneInfo NorwegianTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Oslo");
-    private Dictionary<DateOnly,NordpoolData> _nordpoolData = new();
+    private Dictionary<DateOnly, NordpoolData> _nordpoolData = new();
     private IDisposable? _timer = null;
     private readonly INetDaemonScheduler _scheduler;
     private readonly ILogger<NordPoolDataStorage> _logger;
     private readonly Subject<MultiAreaEntry?> _currentPrice = new();
-    
+
     public Subject<MultiAreaEntry?> CurrentPrice => _currentPrice;
-    
+
     public NordPoolDataStorage(INetDaemonScheduler scheduler, ILogger<NordPoolDataStorage> logger)
     {
         _scheduler = scheduler;
         _logger = logger;
-        DateTimeOffset future = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow,NorwegianTimeZone).AddDays(1);
+        DateTimeOffset future = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, NorwegianTimeZone).AddDays(1);
         future -= future.TimeOfDay;
         future = future.AddMinutes(1);
         _scheduler.RunAt(future, PurgeYesterDay);
-        
+
         UpdateCurrentPrice();
     }
-    
+
     public bool HasPricesForToday
     {
         get
         {
             var now = DateTimeOffset.Now;
-            return _nordpoolData.ContainsKey(new DateOnly(now.Year,now.Month,now.Day));
+            return _nordpoolData.ContainsKey(new DateOnly(now.Year, now.Month, now.Day));
         }
     }
-    
+
     public bool HasPricesForTomorrow
     {
         get
         {
             var tomorrow = DateTimeOffset.Now.AddDays(1);
-            return _nordpoolData.ContainsKey(new DateOnly(tomorrow.Year,tomorrow.Month,tomorrow.Day));
+            return _nordpoolData.ContainsKey(new DateOnly(tomorrow.Year, tomorrow.Month, tomorrow.Day));
         }
     }
 
@@ -68,26 +68,26 @@ public class NordPoolDataStorage
         _currentPrice.OnNext(currentPrice);
         var next = DateTimeOffset.UtcNow.AddHours(1);
         next = next.AddMinutes(next.Minute * -1);
-        
+
         _logger.LogInformation("Prices updated, next update at {next}", next);
         _scheduler.RunAt(next, UpdateCurrentPrice);
     }
 
     public MultiAreaEntry? CurrentHourlyPrice()
     {
-        var now = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow,NorwegianTimeZone);
+        var now = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, NorwegianTimeZone);
         if (_nordpoolData.TryGetValue(new DateOnly(now.Year, now.Month, now.Day), out var entries))
         {
-            var start = new DateTimeOffset(now.Year,now.Month,now.Day,now.Hour,0,0,now.Offset);
+            var start = new DateTimeOffset(now.Year, now.Month, now.Day, now.Hour, 0, 0, now.Offset);
             var end = start.AddHours(1);
             var hour = entries.MultiAreaEntries?
                 .Where(ma => ma.DeliveryEnd <= end && ma.DeliveryStart >= start);
-            
+
             if (hour == null)
             {
                 return null;
             }
-            
+
             return ComputeAverage(hour);
         }
 
@@ -97,7 +97,7 @@ public class NordPoolDataStorage
     private static MultiAreaEntry? ComputeAverage(IEnumerable<MultiAreaEntry> entries)
     {
         var list = entries.ToList();
-        
+
         if (!list.Any())
         {
             return null;
@@ -109,10 +109,10 @@ public class NordPoolDataStorage
         {
             return null;
         }
-        
+
         foreach (var key in keys)
         {
-            areas[key] = list.Select(ma=>ma.EntryPerArea[key]).Average() / 1000 * 1.25;  // MWh -> kWh (and include VAT)  
+            areas[key] = list.Select(ma => ma.EntryPerArea[key]).Average() / 1000 * 1.25;  // MWh -> kWh (and include VAT)  
         }
 
         return new MultiAreaEntry()

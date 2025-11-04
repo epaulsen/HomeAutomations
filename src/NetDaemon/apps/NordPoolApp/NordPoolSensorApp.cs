@@ -9,15 +9,15 @@ namespace HomeAutomations.Apps.NordPoolApp;
 [NetDaemonApp]
 public class NordPoolSensorApp(NordPoolSensor nordPoolSensor, NordPoolSubsidizedSensor nordPoolSubsidizedSensor) : IAsyncInitializable
 {
-    
+
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
         await nordPoolSensor.InitializeAsync(cancellationToken);
         await nordPoolSubsidizedSensor.InitializeAsync(cancellationToken);
     }
-    
+
     public void Dispose()
     {
-        
+
     }
 }

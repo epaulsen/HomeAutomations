@@ -12,19 +12,19 @@ namespace HomeAutomations.apps.UnifiApp;
 
 [NetDaemonApp]
 public class DeviceTrackerApp(
-    IHaContext context, 
+    IHaContext context,
     IMqttEntityManager manager,
     UnifiData data) : IAsyncInitializable
 {
     private UnifiYamlConfig? _config = null;
     private List<DeviceTracker> _trackers = new();
-    
+
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
         _config ??= LoadConfig();
         foreach (var trackerConfig in _config.Trackers)
         {
-            var tracker = new DeviceTracker(context,manager, trackerConfig);
+            var tracker = new DeviceTracker(context, manager, trackerConfig);
             await tracker.InitializeAsync();
             _trackers.Add(tracker);
         }
@@ -42,12 +42,12 @@ public class DeviceTrackerApp(
 
     private UnifiYamlConfig? LoadConfig()
     {
-        var file = Path.Combine(ConfigFolder.Path,"unifi.yaml");
+        var file = Path.Combine(ConfigFolder.Path, "unifi.yaml");
         if (!File.Exists(file))
         {
             return null;
         }
-        
+
         var deserializer = new DeserializerBuilder()
             .WithNamingConvention(UnderscoredNamingConvention.Instance)
             .Build();

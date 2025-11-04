@@ -8,7 +8,7 @@ public class ConfigFolder
         {
             // Check if running in a container
             var runningInContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
-             return bool.TryParse(runningInContainer, out var isContainer) && isContainer;
+            return bool.TryParse(runningInContainer, out var isContainer) && isContainer;
         }
     }
 
