@@ -1,12 +1,10 @@
 using HomeAutomations.Apps.CostSensor;
-using HomeAutomations.Extensions;
 using HomeAutomations.Hosts;
 using HomeAutomations.Models;
+using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.Extensions.MqttEntityManager;
 using NetDaemon.HassModel;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace HomeAutomations.apps.UnifiApp;
 
@@ -14,14 +12,18 @@ namespace HomeAutomations.apps.UnifiApp;
 public class DeviceTrackerApp(
     IHaContext context,
     IMqttEntityManager manager,
-    UnifiData data) : IAsyncInitializable
+    UnifiData data, ILogger<DeviceTrackerApp> logger) : UnifiAppBase, IAsyncInitializable
 {
-    private UnifiYamlConfig? _config = null;
     private List<DeviceTracker> _trackers = new();
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
         _config ??= LoadConfig();
+        if (_config == null)
+        {
+            logger.LogCritical("No config loaded");
+            return;
+        }
         foreach (var trackerConfig in _config.Trackers)
         {
             var tracker = new DeviceTracker(context, manager, trackerConfig);
@@ -38,19 +40,5 @@ public class DeviceTrackerApp(
                 await deviceTracker.SetState(isHome);
             }
         });
-    }
-
-    private UnifiYamlConfig? LoadConfig()
-    {
-        var file = Path.Combine(ConfigFolder.Path, "unifi.yaml");
-        if (!File.Exists(file))
-        {
-            return null;
-        }
-
-        var deserializer = new DeserializerBuilder()
-            .WithNamingConvention(UnderscoredNamingConvention.Instance)
-            .Build();
-        return deserializer.Deserialize<UnifiYamlConfig>(File.ReadAllText(file));
     }
 }

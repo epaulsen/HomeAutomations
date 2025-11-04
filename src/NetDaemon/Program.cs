@@ -59,6 +59,7 @@ try
                 }).Services
                 .AddNetDaemonStateManager()
                 .AddNetDaemonScheduler()
+                .AddNetDaemonApp<NetworkDeviceTrackerApp>()
                 .AddNetDaemonApp<DeviceTrackerApp>()
                 .AddNetDaemonApp<CostSensorApp>()
                 .AddNetDaemonApp<NordPoolSensorApp>()

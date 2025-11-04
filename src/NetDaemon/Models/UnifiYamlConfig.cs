@@ -39,4 +39,14 @@ public class NetworkConfig
     /// </summary>
     public string Vlan { get; set; }
 
+    [YamlIgnore]
+    public string UniqueId
+    {
+        get
+        {
+            var sanitizedName = Regex.Replace(Name, "[^a-zA-Z0-9]+", "_");
+            return $"sensor.unifi_vlan_{sanitizedName}_device_count".ToLowerInvariant();
+        }
+    }
+
 }
