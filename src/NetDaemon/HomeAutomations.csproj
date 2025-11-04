@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="IPNetwork2" Version="3.4.832" />
     <PackageReference Include="JoySoftware.NetDaemon.AppModel" Version="23.44.1" />
     <PackageReference Include="JoySoftware.NetDaemon.Extensions.Logging" Version="23.44.1" />
     <PackageReference Include="JoySoftware.NetDaemon.Extensions.Mqtt" Version="23.44.0" />

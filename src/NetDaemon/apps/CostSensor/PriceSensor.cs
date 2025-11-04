@@ -32,10 +32,10 @@ public class PriceSensor : IDisposable
     private void Initialize()
     {
         var tariffSensor = _ha.Entity(_tariffSensorId);
-        
+
         // Get initial state
         var tariffState = tariffSensor.State;
-        
+
         if (tariffState == null)
         {
             _logger.LogWarning("Tariff sensor {Tariff} not found in HomeAssistant or has no state", _tariffSensorId);
@@ -49,7 +49,7 @@ public class PriceSensor : IDisposable
         else
         {
             _currentPrice = tariffValue;
-            _logger.LogInformation("Retrieved tariff sensor {Tariff} from HomeAssistant with current value: {Value}", 
+            _logger.LogInformation("Retrieved tariff sensor {Tariff} from HomeAssistant with current value: {Value}",
                 _tariffSensorId, tariffValue);
         }
 
@@ -61,22 +61,22 @@ public class PriceSensor : IDisposable
                 try
                 {
                     var newTariff = change.New?.State;
-                    
+
                     if (string.IsNullOrEmpty(newTariff))
                     {
                         _logger.LogDebug("Tariff sensor {Tariff} state change has no new value", _tariffSensorId);
                         return;
                     }
-                    
+
                     if (!double.TryParse(newTariff, CultureInfo.InvariantCulture, out var tariffValue))
                     {
-                        _logger.LogWarning("Could not parse new tariff value '{TariffValue}' for {Tariff}", 
+                        _logger.LogWarning("Could not parse new tariff value '{TariffValue}' for {Tariff}",
                             newTariff, _tariffSensorId);
                         return;
                     }
-                    
+
                     _currentPrice = tariffValue;
-                    
+
                     _logger.LogInformation(
                         "Tariff sensor {Tariff} changed to {NewTariff}",
                         _tariffSensorId, tariffValue);

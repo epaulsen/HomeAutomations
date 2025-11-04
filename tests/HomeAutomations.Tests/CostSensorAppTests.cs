@@ -5,6 +5,7 @@ using NetDaemon.Extensions.MqttEntityManager;
 using HomeAutomations.Apps.CostSensor;
 using System.Reactive.Subjects;
 using System.Reactive.Concurrency;
+using HomeAutomations.Models;
 using NetDaemon.HassModel.Entities;
 
 namespace HomeAutomations.Tests;
@@ -20,11 +21,11 @@ public class CostSensorAppTests
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockLoggerFactory = new Mock<ILoggerFactory>();
         var mockScheduler = new Mock<IScheduler>();
-        
+
         // Setup logger factory to return mock loggers for PriceSensor and CostSensor
         mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>()))
             .Returns(new Mock<ILogger>().Object);
-        
+
         // Setup StateAllChanges to return an observable that entities can use
         var stateSubject = new Subject<StateChange>();
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
@@ -35,15 +36,15 @@ public class CostSensorAppTests
 
         // Assert
         Assert.NotNull(app);
-        
+
         // Verify that initialization was logged
         // Either "No cost sensors configured" or "Initializing CostSensorApp" should be logged
         mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => 
-                    o.ToString()!.Contains("No cost sensors configured") || 
+                It.Is<It.IsAnyType>((o, t) =>
+                    o.ToString()!.Contains("No cost sensors configured") ||
                     o.ToString()!.Contains("Initializing CostSensorApp") ||
                     o.ToString()!.Contains("CostSensorApp initialized") ||
                     o.ToString()!.Contains("Setting up cost sensor")),
@@ -51,7 +52,7 @@ public class CostSensorAppTests
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.AtLeastOnce);
     }
-    
+
     [Fact]
     public async Task Constructor_WithConfiguration_ShouldRetrieveSensorsFromHomeAssistant()
     {
@@ -61,11 +62,11 @@ public class CostSensorAppTests
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockLoggerFactory = new Mock<ILoggerFactory>();
         var mockScheduler = new Mock<IScheduler>();
-        
+
         // Setup logger factory to return mock loggers for PriceSensor and CostSensor
         mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>()))
             .Returns(new Mock<ILogger>().Object);
-        
+
         // Setup StateAllChanges to return an observable that entities can use
         var stateSubject = new Subject<StateChange>();
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
@@ -76,14 +77,14 @@ public class CostSensorAppTests
 
         // Assert
         Assert.NotNull(app);
-        
+
         // Verify that the app properly initialized price sensors (tariff sensors)
         // The refactored code logs "Found X unique tariff sensors" from CostSensorApp
         mockLogger.Verify(
             x => x.Log(
                 LogLevel.Information,
                 It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((o, t) => 
+                It.Is<It.IsAnyType>((o, t) =>
                     o.ToString()!.Contains("Found") && o.ToString()!.Contains("unique tariff sensors")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
@@ -125,7 +126,7 @@ public class CostSensorAppTests
     {
         // This test verifies the spike detection logic
         // If |delta| >= threshold, it should be considered a spike
-        
+
         // Act
         var isSpike = Math.Abs(delta) >= threshold;
 
@@ -142,7 +143,7 @@ public class CostSensorAppTests
     {
         // This test verifies the time window logic for spike detection
         // Spike detection should only apply if time delta < 60 seconds
-        
+
         // Act
         var withinTimeWindow = seconds < 60;
 
@@ -159,10 +160,10 @@ public class CostSensorAppTests
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockLoggerFactory = new Mock<ILoggerFactory>();
         var mockScheduler = new Mock<IScheduler>();
-        
+
         mockLoggerFactory.Setup(x => x.CreateLogger(It.IsAny<string>()))
             .Returns(new Mock<ILogger>().Object);
-        
+
         var stateSubject = new Subject<StateChange>();
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
 
@@ -180,7 +181,7 @@ public class CostSensorAppTests
                 x => x.Log(
                     LogLevel.Information,
                     It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((o, t) => 
+                    It.Is<It.IsAnyType>((o, t) =>
                         o.ToString()!.Contains("Running in container")),
                     null,
                     It.IsAny<Func<It.IsAnyType, Exception?, string>>()),

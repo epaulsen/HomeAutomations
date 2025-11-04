@@ -58,7 +58,7 @@ public class NordPoolSensor(
                 return;
             }
 
-            
+
             var price = ma.EntryPerArea["NO2"];
             logger.LogInformation("Price changed to {price}", price);
             await manager.SetStateAsync(SensorUniqueId, price.ToString("F2", CultureInfo.InvariantCulture));

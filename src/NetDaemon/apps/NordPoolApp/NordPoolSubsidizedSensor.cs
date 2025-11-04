@@ -49,7 +49,7 @@ public class NordPoolSubsidizedSensor(
                     return;
                 }
                 price = ComputeSubsidizedPrice(price.Value);
-                
+
                 logger.LogInformation("New price state set {price}", price);
                 await manager.SetStateAsync(SensorUniqueId, price!.Value.ToString("F2", CultureInfo.InvariantCulture));
             });

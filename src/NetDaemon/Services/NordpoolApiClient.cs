@@ -23,24 +23,24 @@ public class NordpoolApiClient : INordpoolApiClient
     public async Task<NordpoolData?> FetchPriceDataAsync(DateOnly date, CancellationToken cancellationToken = default)
     {
         var url = $"?date={date:yyyy-MM-dd}&market={Market}&deliveryArea={DeliveryAreas}&currency={Currency}";
-        
+
         _logger.LogInformation("Fetching Nordpool prices for {Date} from {Url}", date, url);
 
         try
         {
             var response = await _httpClient.GetAsync(url, cancellationToken);
-            
+
             if (response.StatusCode == HttpStatusCode.NoContent)
             {
                 _logger.LogInformation("No data available yet for {Date} (HTTP 204)", date);
                 return null;
             }
-            
+
             response.EnsureSuccessStatusCode();
-            
+
             var content = await response.Content.ReadFromJsonAsync<NordpoolData>(cancellationToken);
             _logger.LogInformation("Successfully fetched data for {Date}", date);
-            
+
             return content;
         }
         catch (HttpRequestException ex)

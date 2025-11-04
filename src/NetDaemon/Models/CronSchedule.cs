@@ -1,4 +1,4 @@
-namespace HomeAutomations.Apps.CostSensor;
+namespace HomeAutomations.Models;
 
 /// <summary>
 /// Defines the reset schedule for cost sensors
