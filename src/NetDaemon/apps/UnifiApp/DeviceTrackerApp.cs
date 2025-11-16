@@ -1,7 +1,6 @@
 using HomeAutomations.Apps.CostSensor;
 using HomeAutomations.Hosts;
 using HomeAutomations.Models;
-using HomeAutomations.Services;
 using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.Extensions.MqttEntityManager;
@@ -14,7 +13,7 @@ public class DeviceTrackerApp(
     IHaContext context,
     IMqttEntityManager manager,
     UnifiData data,
-    ITimeProvider timeProvider,
+    TimeProvider timeProvider,
     ILogger<DeviceTrackerApp> logger) : UnifiAppBase, IAsyncInitializable
 {
     private List<DeviceTracker> _trackers = new();

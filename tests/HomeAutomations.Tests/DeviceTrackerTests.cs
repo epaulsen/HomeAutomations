@@ -4,7 +4,6 @@ using NetDaemon.HassModel;
 using NetDaemon.Extensions.MqttEntityManager;
 using HomeAutomations.apps.UnifiApp;
 using HomeAutomations.Models;
-using HomeAutomations.Services;
 
 namespace HomeAutomations.Tests;
 
@@ -16,8 +15,8 @@ public class DeviceTrackerTests
         // Arrange
         var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
-        var mockTimeProvider = new Mock<ITimeProvider>();
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(DateTime.UtcNow);
+        var mockTimeProvider = new Mock<TimeProvider>();
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(DateTimeOffset.UtcNow);
         
         var config = new DeviceTrackerConfig
         {
@@ -43,8 +42,8 @@ public class DeviceTrackerTests
         // Arrange
         var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
-        var mockTimeProvider = new Mock<ITimeProvider>();
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(DateTime.UtcNow);
+        var mockTimeProvider = new Mock<TimeProvider>();
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(DateTimeOffset.UtcNow);
         
         var config = new DeviceTrackerConfig
         {
@@ -70,10 +69,10 @@ public class DeviceTrackerTests
         // Arrange
         var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
-        var mockTimeProvider = new Mock<ITimeProvider>();
+        var mockTimeProvider = new Mock<TimeProvider>();
         
-        var baseTime = DateTime.UtcNow;
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime);
+        var baseTime = DateTimeOffset.UtcNow;
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime);
         
         var config = new DeviceTrackerConfig
         {
@@ -89,7 +88,7 @@ public class DeviceTrackerTests
         mockEntityManager.Invocations.Clear();
 
         // Device disappears after 30 seconds
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime.AddSeconds(30));
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime.AddSeconds(30));
         await tracker.SetState(isHome: false);
 
         // Assert - should NOT set to not_home
@@ -104,10 +103,10 @@ public class DeviceTrackerTests
         // Arrange
         var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
-        var mockTimeProvider = new Mock<ITimeProvider>();
+        var mockTimeProvider = new Mock<TimeProvider>();
         
-        var baseTime = DateTime.UtcNow;
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime);
+        var baseTime = DateTimeOffset.UtcNow;
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime);
         
         var config = new DeviceTrackerConfig
         {
@@ -123,7 +122,7 @@ public class DeviceTrackerTests
         mockEntityManager.Invocations.Clear();
 
         // Device disappears after 60 seconds
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime.AddSeconds(60));
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime.AddSeconds(60));
         await tracker.SetState(isHome: false);
 
         // Assert - should set to not_home
@@ -138,10 +137,10 @@ public class DeviceTrackerTests
         // Arrange
         var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
-        var mockTimeProvider = new Mock<ITimeProvider>();
+        var mockTimeProvider = new Mock<TimeProvider>();
         
-        var baseTime = DateTime.UtcNow;
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime);
+        var baseTime = DateTimeOffset.UtcNow;
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime);
         
         var config = new DeviceTrackerConfig
         {
@@ -157,7 +156,7 @@ public class DeviceTrackerTests
         mockEntityManager.Invocations.Clear();
 
         // Device disappears after 90 seconds
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime.AddSeconds(90));
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime.AddSeconds(90));
         await tracker.SetState(isHome: false);
 
         // Assert - should set to not_home
@@ -172,10 +171,10 @@ public class DeviceTrackerTests
         // Arrange
         var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
-        var mockTimeProvider = new Mock<ITimeProvider>();
+        var mockTimeProvider = new Mock<TimeProvider>();
         
-        var baseTime = DateTime.UtcNow;
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime);
+        var baseTime = DateTimeOffset.UtcNow;
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime);
         
         var config = new DeviceTrackerConfig
         {
@@ -191,11 +190,11 @@ public class DeviceTrackerTests
         mockEntityManager.Invocations.Clear();
 
         // Device disappears for 30 seconds (within debounce window)
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime.AddSeconds(30));
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime.AddSeconds(30));
         await tracker.SetState(isHome: false);
 
         // Device reappears
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime.AddSeconds(45));
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime.AddSeconds(45));
         await tracker.SetState(isHome: true);
 
         // Assert - should set to home again
@@ -213,10 +212,10 @@ public class DeviceTrackerTests
         // Arrange
         var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
-        var mockTimeProvider = new Mock<ITimeProvider>();
+        var mockTimeProvider = new Mock<TimeProvider>();
         
-        var baseTime = DateTime.UtcNow;
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime);
+        var baseTime = DateTimeOffset.UtcNow;
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime);
         
         var config = new DeviceTrackerConfig
         {
@@ -232,7 +231,7 @@ public class DeviceTrackerTests
         mockEntityManager.Invocations.Clear();
 
         // Device disappears for specified seconds
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime.AddSeconds(seconds));
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime.AddSeconds(seconds));
         await tracker.SetState(isHome: false);
 
         // Assert - should NOT set to not_home
@@ -250,10 +249,10 @@ public class DeviceTrackerTests
         // Arrange
         var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
-        var mockTimeProvider = new Mock<ITimeProvider>();
+        var mockTimeProvider = new Mock<TimeProvider>();
         
-        var baseTime = DateTime.UtcNow;
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime);
+        var baseTime = DateTimeOffset.UtcNow;
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime);
         
         var config = new DeviceTrackerConfig
         {
@@ -269,7 +268,7 @@ public class DeviceTrackerTests
         mockEntityManager.Invocations.Clear();
 
         // Device disappears for specified seconds
-        mockTimeProvider.Setup(x => x.UtcNow).Returns(baseTime.AddSeconds(seconds));
+        mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(baseTime.AddSeconds(seconds));
         await tracker.SetState(isHome: false);
 
         // Assert - should set to not_home
