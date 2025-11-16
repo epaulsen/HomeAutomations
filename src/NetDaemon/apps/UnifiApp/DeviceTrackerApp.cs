@@ -33,11 +33,12 @@ public class DeviceTrackerApp(
 
         data.ClientDevices.SubscribeAsync(async data =>
         {
+            var currentTime = DateTime.UtcNow;
             foreach (var deviceTracker in _trackers)
             {
                 bool isHome = data.Any(d =>
                     d.MacAddress.Equals(deviceTracker.MacAddress, StringComparison.InvariantCultureIgnoreCase));
-                await deviceTracker.SetState(isHome);
+                await deviceTracker.SetState(isHome, currentTime);
             }
         });
     }
