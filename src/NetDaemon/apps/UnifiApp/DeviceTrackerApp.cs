@@ -12,7 +12,9 @@ namespace HomeAutomations.apps.UnifiApp;
 public class DeviceTrackerApp(
     IHaContext context,
     IMqttEntityManager manager,
-    UnifiData data, ILogger<DeviceTrackerApp> logger) : UnifiAppBase, IAsyncInitializable
+    UnifiData data,
+    TimeProvider timeProvider,
+    ILogger<DeviceTrackerApp> logger) : UnifiAppBase, IAsyncInitializable
 {
     private List<DeviceTracker> _trackers = new();
 
@@ -26,7 +28,7 @@ public class DeviceTrackerApp(
         }
         foreach (var trackerConfig in _config.Trackers)
         {
-            var tracker = new DeviceTracker(context, manager, trackerConfig);
+            var tracker = new DeviceTracker(context, manager, trackerConfig, timeProvider);
             await tracker.InitializeAsync();
             _trackers.Add(tracker);
         }

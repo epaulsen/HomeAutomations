@@ -46,6 +46,7 @@ try
                     };
                 })
                 .Services
+                .AddSingleton(TimeProvider.System)
                 .AddSingleton<UnifiData>()
                 .AddHostedService<UnifiBackgroundService>()
                 .AddSingleton<NordPoolSensor>()
