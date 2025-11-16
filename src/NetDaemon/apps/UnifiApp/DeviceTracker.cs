@@ -1,4 +1,5 @@
 using HomeAutomations.Models;
+using HomeAutomations.Services;
 using NetDaemon.Extensions.MqttEntityManager;
 using NetDaemon.HassModel;
 
@@ -7,7 +8,8 @@ namespace HomeAutomations.apps.UnifiApp;
 public class DeviceTracker(
     IHaContext context,
     IMqttEntityManager manager,
-    DeviceTrackerConfig config)
+    DeviceTrackerConfig config,
+    ITimeProvider timeProvider)
 {
     private string? state = null;
     private DateTime? lastSeenTime = null;
@@ -32,8 +34,10 @@ public class DeviceTracker(
 
     public string MacAddress => config.MacAddress;
 
-    public async Task SetState(bool isHome, DateTime currentTime)
+    public async Task SetState(bool isHome)
     {
+        var currentTime = timeProvider.UtcNow;
+        
         if (isHome)
         {
             // Device is present, update last seen time and set to home

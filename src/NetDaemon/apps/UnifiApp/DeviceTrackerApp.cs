@@ -1,6 +1,7 @@
 using HomeAutomations.Apps.CostSensor;
 using HomeAutomations.Hosts;
 using HomeAutomations.Models;
+using HomeAutomations.Services;
 using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.Extensions.MqttEntityManager;
@@ -12,7 +13,9 @@ namespace HomeAutomations.apps.UnifiApp;
 public class DeviceTrackerApp(
     IHaContext context,
     IMqttEntityManager manager,
-    UnifiData data, ILogger<DeviceTrackerApp> logger) : UnifiAppBase, IAsyncInitializable
+    UnifiData data,
+    ITimeProvider timeProvider,
+    ILogger<DeviceTrackerApp> logger) : UnifiAppBase, IAsyncInitializable
 {
     private List<DeviceTracker> _trackers = new();
 
@@ -26,19 +29,18 @@ public class DeviceTrackerApp(
         }
         foreach (var trackerConfig in _config.Trackers)
         {
-            var tracker = new DeviceTracker(context, manager, trackerConfig);
+            var tracker = new DeviceTracker(context, manager, trackerConfig, timeProvider);
             await tracker.InitializeAsync();
             _trackers.Add(tracker);
         }
 
         data.ClientDevices.SubscribeAsync(async data =>
         {
-            var currentTime = DateTime.UtcNow;
             foreach (var deviceTracker in _trackers)
             {
                 bool isHome = data.Any(d =>
                     d.MacAddress.Equals(deviceTracker.MacAddress, StringComparison.InvariantCultureIgnoreCase));
-                await deviceTracker.SetState(isHome, currentTime);
+                await deviceTracker.SetState(isHome);
             }
         });
     }
