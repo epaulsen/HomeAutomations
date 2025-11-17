@@ -3,7 +3,6 @@ using HomeAutomations.Models;
 using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.Extensions.MqttEntityManager;
-using NetDaemon.Extensions.Scheduler;
 using NetDaemon.HassModel;
 
 namespace HomeAutomations.Apps.NordPoolApp;
@@ -11,7 +10,6 @@ namespace HomeAutomations.Apps.NordPoolApp;
 public class NordPoolSensor(
     IHaContext context,
     IMqttEntityManager manager,
-    INetDaemonScheduler scheduler,
     NordPoolDataStorage storage,
     ILogger<NordPoolSensor> logger) : IAsyncInitializable
 {

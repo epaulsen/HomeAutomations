@@ -1,5 +1,5 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 
 # Use build arguments for multi-platform support
 ARG TARGETARCH
@@ -50,7 +50,7 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then \
     fi
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/runtime-deps:9.0-alpine AS runtime
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-alpine AS runtime
 WORKDIR /app
 
 # Install ICU libraries for globalization support and timezone data

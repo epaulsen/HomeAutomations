@@ -346,4 +346,8 @@ logs/
 .env
 !.env.example
 
+# Ignore ASP.NET Core environment specific config files
 appsettings.Development.json
+
+# Ignore YAML config files
+**/*.yaml

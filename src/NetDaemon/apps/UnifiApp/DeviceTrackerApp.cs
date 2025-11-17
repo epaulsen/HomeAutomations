@@ -38,7 +38,7 @@ public class DeviceTrackerApp(
             foreach (var deviceTracker in _trackers)
             {
                 bool isHome = data.Any(d =>
-                    d.MacAddress.Equals(deviceTracker.MacAddress, StringComparison.InvariantCultureIgnoreCase));
+                    d.MacAddress?.Equals(deviceTracker.MacAddress, StringComparison.InvariantCultureIgnoreCase) == true);
                 await deviceTracker.SetState(isHome);
             }
         });
