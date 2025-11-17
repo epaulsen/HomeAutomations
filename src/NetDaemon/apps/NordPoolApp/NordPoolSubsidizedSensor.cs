@@ -1,9 +1,7 @@
 using System.Globalization;
-using HomeAutomations.Models;
 using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.Extensions.MqttEntityManager;
-using NetDaemon.Extensions.Scheduler;
 using NetDaemon.HassModel;
 
 namespace HomeAutomations.Apps.NordPoolApp;
@@ -11,8 +9,6 @@ namespace HomeAutomations.Apps.NordPoolApp;
 public class NordPoolSubsidizedSensor(
     IHaContext context,
     IMqttEntityManager manager,
-    INetDaemonScheduler scheduler,
-    NordPoolDataStorage storage,
     ILogger<NordPoolSubsidizedSensor> logger) : IAsyncInitializable
 {
     private const string SensorUniqueId = "sensor.strompris_nordpool_no2_med_stromstotte";
@@ -39,6 +35,11 @@ public class NordPoolSubsidizedSensor(
         context.Entity(NordPoolSensor.SensorUniqueId).StateAllChanges()
             .SubscribeAsync(async state =>
             {
+                if (state.New == null)
+                {
+                    return;
+                }
+                
                 double? price = double.TryParse(state.New.State, CultureInfo.InvariantCulture, out var parsed)
                     ? parsed
                     : null;

@@ -21,7 +21,7 @@ public class UnifiHttpClient(HttpClient client, ILogger<UnifiHttpClient> logger)
         // TODO: If we hit 200 device limits we would need pagination here.
         var response =
             await client.GetFromJsonAsync<UnifiResponse<ClientDevice>>($"v1/sites/{siteId:D}/clients?limit=200");
-
+        ArgumentNullException.ThrowIfNull(response);
         return response;
     }
 
@@ -33,6 +33,7 @@ public class UnifiHttpClient(HttpClient client, ILogger<UnifiHttpClient> logger)
         }
 
         var response = await client.GetFromJsonAsync<UnifiResponse<SiteDto>>($"v1/sites");
+        ArgumentNullException.ThrowIfNull(response);
         Guid siteId = response.Data.Single().Id;
         logger.LogInformation("Unifi returned siteId '{siteId}'", siteId);
         return siteId;

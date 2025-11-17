@@ -27,10 +27,10 @@ public class SiteDto
     public Guid Id { get; set; }
 
     [JsonPropertyName("internalReference")]
-    public string InternalReference { get; set; }
+    public string? InternalReference { get; set; }
 
     [JsonPropertyName("name")]
-    public string Name { get; set; }
+    public required string Name { get; set; }
 }
 
 
@@ -40,7 +40,7 @@ public class ClientDevice : IEquatable<ClientDevice>, IComparable<ClientDevice>
     public Guid Id { get; set; }
 
     [JsonPropertyName("name")]
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
     [JsonPropertyName("connectedAt")]
     public DateTime ConnectedAt { get; set; }
