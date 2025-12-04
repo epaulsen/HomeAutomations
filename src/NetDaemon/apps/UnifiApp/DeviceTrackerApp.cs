@@ -28,7 +28,7 @@ public class DeviceTrackerApp(
         }
         foreach (var trackerConfig in _config.Trackers)
         {
-            var tracker = new DeviceTracker(context, manager, trackerConfig, timeProvider);
+            var tracker = new DeviceTracker(context, manager, trackerConfig, timeProvider, logger);
             await tracker.InitializeAsync();
             _trackers.Add(tracker);
         }

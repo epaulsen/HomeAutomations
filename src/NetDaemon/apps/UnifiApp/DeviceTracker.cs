@@ -1,4 +1,5 @@
 using HomeAutomations.Models;
+using Microsoft.Extensions.Logging;
 using NetDaemon.Extensions.MqttEntityManager;
 using NetDaemon.HassModel;
 
@@ -8,7 +9,8 @@ public class DeviceTracker(
     IHaContext context,
     IMqttEntityManager manager,
     DeviceTrackerConfig config,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    ILogger logger)
 {
     private string? state = null;
     private DateTime? lastSeenTime = null;
@@ -43,6 +45,7 @@ public class DeviceTracker(
             lastSeenTime = currentTime;
             string newState = "home";
             await manager.SetStateAsync(config.UniqueId, newState);
+            logger.LogInformation("{Person} is home", config.Name);
         }
         else
         {
@@ -54,6 +57,7 @@ public class DeviceTracker(
                 {
                     string newState = "not_home";
                     await manager.SetStateAsync(config.UniqueId, newState);
+                    logger.LogInformation("{Person} is not_home", config.Name);
                 }
                 // else: still within 60 second window, don't change state
             }
@@ -62,6 +66,7 @@ public class DeviceTracker(
                 // Never seen before, set to not_home immediately
                 string newState = "not_home";
                 await manager.SetStateAsync(config.UniqueId, newState);
+                logger.LogInformation("{Person} is not_home", config.Name);
             }
         }
     }
