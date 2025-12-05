@@ -17,20 +17,19 @@ public class NordPoolSubsidizedSensor(
     {
         var sensorEntity = context.Entity(SensorUniqueId);
         var existingState = sensorEntity.State;
-        if (string.IsNullOrWhiteSpace(existingState))
-        {
-            logger.LogInformation("Adding Nordpool subsidized sensor");
-            await manager.CreateAsync(
-                SensorUniqueId,
-                new EntityCreationOptions(DeviceClass: "monetary",
-                    UniqueId: SensorUniqueId,
-                    Name: "Nord Pool NO2 med strømstøtte"),
-                new
-                {
-                    unit_of_measurement = "kr",
-                    state_class = "measurement"
-                });
-        }
+
+        logger.LogInformation("Adding Nordpool subsidized sensor");
+        await manager.CreateAsync(
+            SensorUniqueId,
+            new EntityCreationOptions(DeviceClass: "monetary",
+                UniqueId: SensorUniqueId,
+                Name: "Nord Pool NO2 med strømstøtte", Persist: true),
+            new
+            {
+                unit_of_measurement = "kr",
+                state_class = "measurement"
+            });
+
 
         context.Entity(NordPoolSensor.SensorUniqueId).StateAllChanges()
             .SubscribeAsync(async state =>
@@ -39,7 +38,7 @@ public class NordPoolSubsidizedSensor(
                 {
                     return;
                 }
-                
+
                 double? price = double.TryParse(state.New.State, CultureInfo.InvariantCulture, out var parsed)
                     ? parsed
                     : null;
@@ -49,6 +48,7 @@ public class NordPoolSubsidizedSensor(
                     await manager.SetStateAsync(SensorUniqueId, "Unavailable");
                     return;
                 }
+
                 price = ComputeSubsidizedPrice(price.Value);
 
                 logger.LogInformation("New price state set {price}", price);
@@ -68,7 +68,7 @@ public class NordPoolSubsidizedSensor(
             return price.Value;
         }
 
-        var subsidy = 0.9375 + (price - 0.9375) * 0.1;  // 10 % of amount above 93,75 øre
+        var subsidy = 0.9375 + (price - 0.9375) * 0.1; // 10 % of amount above 93,75 øre
         return subsidy;
     }
 }

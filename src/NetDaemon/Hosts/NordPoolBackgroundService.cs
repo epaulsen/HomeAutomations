@@ -25,6 +25,7 @@ public class NordPoolBackgroundService
 
     public async Task Fetch(CancellationToken cancellationToken)
     {
+        logger.LogInformation("Fetching price data from Nordpool");
         var now = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, NorwegianTimeZone);
 
         using var scope = scopeFactory.CreateScope();

@@ -19,21 +19,19 @@ public class NordPoolSensor(
     {
         var costSensorEntity = context.Entity(SensorUniqueId);
         var existingState = costSensorEntity.State;
-        if (string.IsNullOrWhiteSpace(existingState))
-        {
-            logger.LogInformation("Adding Nordpool Sensor");
-            await manager.CreateAsync(
-                SensorUniqueId,
-                new EntityCreationOptions(DeviceClass: "monetary",
-                    UniqueId: SensorUniqueId,
-                    Name: "Nord Pool NO2"),
-                new
-                {
-                    unit_of_measurement = "kr",
-                    state_class = "measurement"
-                });
-        }
 
+        logger.LogInformation("Adding Nordpool Sensor");
+        await manager.CreateAsync(
+            SensorUniqueId,
+            new EntityCreationOptions(DeviceClass: "monetary",
+                UniqueId: SensorUniqueId,
+                Name: "Nord Pool NO2") { Persist = true },
+            new
+            {
+                unit_of_measurement = "kr",
+                state_class = "measurement"
+            });
+        
         var current = storage.CurrentHourlyPrice();
         double? state = current != null
             ? current.EntryPerArea.TryGetValue("NO2", out var no2Price) ? no2Price : null
@@ -46,7 +44,6 @@ public class NordPoolSensor(
         }
 
         await manager.SetStateAsync(SensorUniqueId, statestring);
-
 
         storage.CurrentPrice.SubscribeAsync(async ma =>
         {

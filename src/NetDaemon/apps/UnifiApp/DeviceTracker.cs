@@ -19,18 +19,17 @@ public class DeviceTracker(
     {
         var trackerEntity = context.Entity(config.UniqueId);
         state = trackerEntity.State;
-        if (string.IsNullOrEmpty(state))
-        {
-            // Create entity
-            await manager.CreateAsync(
-                entityId: config.UniqueId,
-                options: new EntityCreationOptions()
-                {
-                    DeviceClass = "device_tracker",
-                    Name = config.Name,
-                    UniqueId = config.UniqueId
-                });
-        }
+
+        // Create entity
+        await manager.CreateAsync(
+            entityId: config.UniqueId,
+            options: new EntityCreationOptions()
+            {
+                DeviceClass = "device_tracker",
+                Name = config.Name,
+                UniqueId = config.UniqueId,
+                Persist = true
+            });
     }
 
     public string MacAddress => config.MacAddress;
@@ -38,7 +37,7 @@ public class DeviceTracker(
     public async Task SetState(bool isHome)
     {
         var currentTime = timeProvider.GetUtcNow().UtcDateTime;
-        
+
         if (isHome)
         {
             // Device is present, update last seen time and set to home

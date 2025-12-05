@@ -1,6 +1,7 @@
 ﻿using HomeAutomations.Apps.CostSensor;
 using HomeAutomations.Apps.NordPoolApp;
 using HomeAutomations.apps.UnifiApp;
+using HomeAutomations.Extensions;
 using HomeAutomations.Hosts;
 using HomeAutomations.Models;
 using HomeAutomations.Services;
@@ -20,6 +21,7 @@ try
         .UseNetDaemonAppSettings()
         .UseNetDaemonRuntime()
         .UseNetDaemonMqttEntityManagement()
+        .UseCustomLogging()
         .ConfigureAppConfiguration((context, config) =>
         {
             config.AddJsonFile("appsettings.Development.json", optional: true);
@@ -67,13 +69,13 @@ try
                 ;
 
         })
-        .UseSerilog((context, configuration) =>
-        {
-            configuration
-                .MinimumLevel.Information()
-                .Enrich.FromLogContext()
-                .WriteTo.Console();
-        })
+        // .UseSerilog((context, configuration) =>
+        // {
+        //     configuration
+        //         .MinimumLevel.Information()
+        //         .Enrich.FromLogContext()
+        //         .WriteTo.Console();
+        // })
         .Build()
         .RunAsync();
 }

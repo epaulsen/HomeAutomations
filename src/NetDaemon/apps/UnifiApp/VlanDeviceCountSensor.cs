@@ -17,21 +17,20 @@ public class VlanDeviceCountSensor(
     {
         var trackerEntity = context.Entity(config.UniqueId);
         _currentCount = int.TryParse(trackerEntity.State, CultureInfo.InvariantCulture, out int count) ? count : null;
-        if (!_currentCount.HasValue)
-        {
-            // Create entity
-            await manager.CreateAsync(
-                entityId: config.UniqueId,
-                options: new EntityCreationOptions()
-                {
-                    Name = config.Name,
-                    UniqueId = config.UniqueId
-                },
-                new
-                {
-                    state_class = "measurement",
-                });
-        }
+
+        // Create entity
+        await manager.CreateAsync(
+            entityId: config.UniqueId,
+            options: new EntityCreationOptions()
+            {
+                Name = config.Name,
+                UniqueId = config.UniqueId,
+                Persist = true
+            },
+            new
+            {
+                state_class = "measurement",
+            });
     }
 
     public async Task UpdateCountAsync(List<ClientDevice> devices)
