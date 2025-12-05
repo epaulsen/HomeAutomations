@@ -17,8 +17,8 @@
     <PackageReference Include="JoySoftware.NetDaemon.HassModel" Version="23.44.1" />
     <PackageReference Include="JoySoftware.NetDaemon.Runtime" Version="23.44.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
-    <PackageReference Include="NetDaemon.Extensions.Mqtt" Version="25.45.1" />
-    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="NetDaemon.Extensions.Mqtt" Version="25.46.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 
