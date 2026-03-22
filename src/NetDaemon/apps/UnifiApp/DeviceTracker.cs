@@ -3,33 +3,37 @@ using Microsoft.Extensions.Logging;
 using NetDaemon.Extensions.MqttEntityManager;
 using NetDaemon.HassModel;
 
-namespace HomeAutomations.apps.UnifiApp;
+namespace HomeAutomations.Apps.UnifiApp;
 
 public class DeviceTracker(
-    IHaContext context,
     IMqttEntityManager manager,
     DeviceTrackerConfig config,
     TimeProvider timeProvider,
     ILogger logger)
 {
-    private string? state = null;
-    private DateTime? lastSeenTime = null;
+    private const string StateHome = "home";
+    private const string StateNotHome = "not_home";
+
+    private DateTime? _lastSeenTime = null;
 
     public async Task InitializeAsync()
     {
-        var trackerEntity = context.Entity(config.UniqueId);
-        state = trackerEntity.State;
-
-        // Create entity
-        await manager.CreateAsync(
-            entityId: config.UniqueId,
-            options: new EntityCreationOptions()
-            {
-                DeviceClass = "device_tracker",
-                Name = config.Name,
-                UniqueId = config.UniqueId,
-                Persist = true
-            });
+        try
+        {
+            await manager.CreateAsync(
+                entityId: config.UniqueId,
+                options: new EntityCreationOptions()
+                {
+                    DeviceClass = "device_tracker",
+                    Name = config.Name,
+                    UniqueId = config.UniqueId,
+                    Persist = true
+                });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to create entity for {EntityId}", config.UniqueId);
+        }
     }
 
     public string MacAddress => config.MacAddress;
@@ -40,32 +44,48 @@ public class DeviceTracker(
 
         if (isHome)
         {
-            // Device is present, update last seen time and set to home
-            lastSeenTime = currentTime;
-            string newState = "home";
-            await manager.SetStateAsync(config.UniqueId, newState);
-            logger.LogInformation("{Person} is home", config.Name);
+            _lastSeenTime = currentTime;
+            try
+            {
+                await manager.SetStateAsync(config.UniqueId, StateHome);
+                logger.LogInformation("{Person} is home", config.Name);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to set state for {EntityId}", config.UniqueId);
+            }
         }
         else
         {
-            // Device is not present, only set to not_home if it hasn't been seen for more than 60 seconds
-            if (lastSeenTime.HasValue)
+            if (_lastSeenTime.HasValue)
             {
-                var timeSinceLastSeen = currentTime - lastSeenTime.Value;
+                var timeSinceLastSeen = currentTime - _lastSeenTime.Value;
                 if (timeSinceLastSeen.TotalSeconds >= 60)
                 {
-                    string newState = "not_home";
-                    await manager.SetStateAsync(config.UniqueId, newState);
-                    logger.LogInformation("{Person} is not_home", config.Name);
+                    try
+                    {
+                        await manager.SetStateAsync(config.UniqueId, StateNotHome);
+                        logger.LogInformation("{Person} is not_home", config.Name);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Failed to set state for {EntityId}", config.UniqueId);
+                    }
                 }
                 // else: still within 60 second window, don't change state
             }
             else
             {
                 // Never seen before, set to not_home immediately
-                string newState = "not_home";
-                await manager.SetStateAsync(config.UniqueId, newState);
-                logger.LogInformation("{Person} is not_home", config.Name);
+                try
+                {
+                    await manager.SetStateAsync(config.UniqueId, StateNotHome);
+                    logger.LogInformation("{Person} is not_home", config.Name);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to set state for {EntityId}", config.UniqueId);
+                }
             }
         }
     }

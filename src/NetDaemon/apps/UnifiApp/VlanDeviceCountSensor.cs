@@ -1,24 +1,18 @@
 using System.Globalization;
 using System.Net;
 using HomeAutomations.Models;
+using Microsoft.Extensions.Logging;
 using NetDaemon.Extensions.MqttEntityManager;
-using NetDaemon.HassModel;
 
-namespace HomeAutomations.apps.UnifiApp;
+namespace HomeAutomations.Apps.UnifiApp;
 
 public class VlanDeviceCountSensor(
-    IHaContext context,
     IMqttEntityManager manager,
-    NetworkConfig config)
+    NetworkConfig config,
+    ILogger logger)
 {
-    private int? _currentCount = null;
-
     public async Task InitializeAsync()
     {
-        var trackerEntity = context.Entity(config.UniqueId);
-        _currentCount = int.TryParse(trackerEntity.State, CultureInfo.InvariantCulture, out int count) ? count : null;
-
-        // Create entity
         await manager.CreateAsync(
             entityId: config.UniqueId,
             options: new EntityCreationOptions()
@@ -36,7 +30,17 @@ public class VlanDeviceCountSensor(
     public async Task UpdateCountAsync(List<ClientDevice> devices)
     {
         var netWork = IPNetwork2.Parse(config.Vlan);
-        var ipAddresses = devices.Select(d => IPNetwork2.Parse(d.IpAddress));
+        var ipAddresses = devices
+            .Where(d =>
+            {
+                if (string.IsNullOrWhiteSpace(d.IpAddress))
+                {
+                    logger.LogWarning("Skipping device {Id} with null/empty IpAddress", d.Id);
+                    return false;
+                }
+                return true;
+            })
+            .Select(d => IPNetwork2.Parse(d.IpAddress));
         var count = ipAddresses.Count(ip => netWork.Contains(ip));
         await manager.SetStateAsync(config.UniqueId, count.ToString(CultureInfo.InvariantCulture));
     }

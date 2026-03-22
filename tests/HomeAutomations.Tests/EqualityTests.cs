@@ -13,7 +13,7 @@ public class EqualityTests
             Id = Guid.NewGuid(),
             Name = "Test",
             Access = new AccessInfo() { Type = "Default" },
-            ConnectedAt = DateTime.Now,
+            ConnectedAt = new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc),
             IpAddress = "1.2.3.4",
             MacAddress = "UncleMac",
             Type = "WIRED",

@@ -23,7 +23,7 @@ public class NordPoolBackgroundService
         return Task.CompletedTask;
     }
 
-    public async Task Fetch(CancellationToken cancellationToken)
+    private async Task Fetch(CancellationToken cancellationToken)
     {
         logger.LogInformation("Fetching price data from Nordpool");
         var now = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, NorwegianTimeZone);
@@ -54,16 +54,11 @@ public class NordPoolBackgroundService
             next = next.AddDays(1);
         }
 
-        scheduler.RunAt(next, async void () =>
+        scheduler.RunAt(next, () =>
         {
-            try
-            {
-                await Fetch(CancellationToken.None);
-            }
-            catch (Exception e)
-            {
-                logger.LogError(e, "Error fetching price data");
-            }
+            _ = Fetch(CancellationToken.None).ContinueWith(
+                t => logger.LogError(t.Exception, "Error fetching price data"),
+                TaskContinuationOptions.OnlyOnFaulted);
         });
     }
 }

@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Reactive.Concurrency;
 using System.Text;
+using HomeAutomations.Extensions;
 using HomeAutomations.Models;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NetDaemon.AppModel;
 using NetDaemon.HassModel;
@@ -23,16 +25,18 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
     private readonly IMqttEntityManager _entityManager;
     private readonly ILoggerFactory _loggerFactory;
     private readonly IScheduler _scheduler;
+    private readonly IHostApplicationLifetime _lifetime;
     private readonly Dictionary<string, PriceSensor> _priceSensors = new();
     private readonly List<CostSensor> _costSensors = new();
 
-    public CostSensorApp(IHaContext ha, ILogger<CostSensorApp> logger, IMqttEntityManager entityManager, ILoggerFactory loggerFactory, IScheduler scheduler)
+    public CostSensorApp(IHaContext ha, ILogger<CostSensorApp> logger, IMqttEntityManager entityManager, ILoggerFactory loggerFactory, IScheduler scheduler, IHostApplicationLifetime lifetime)
     {
         _ha = ha;
         _logger = logger;
         _entityManager = entityManager;
         _loggerFactory = loggerFactory;
         _scheduler = scheduler;
+        _lifetime = lifetime;
     }
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
@@ -103,12 +107,18 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
 
     private CostSensorConfig? LoadConfiguration()
     {
-        var configPath = GetConfigurationPath();
+        var configDir = ConfigFolder.Path;
 
-        if (configPath == null)
+        if (ConfigFolder.IsRunningInContainer && !Directory.Exists(configDir))
         {
+            _logger.LogError("Configuration directory {ConfigDir} does not exist. " +
+                "Please mount a volume to /config in your docker-compose.yml or Docker run command. " +
+                "Example: volumes: - ./config:/config", configDir);
+            _lifetime.StopApplication();
             return null;
         }
+
+        var configPath = System.IO.Path.Combine(configDir, "cost_sensors.yaml");
 
         _logger.LogDebug("Looking for configuration file at: {Path}", configPath);
 
@@ -139,32 +149,6 @@ public class CostSensorApp : IAsyncInitializable, IDisposable
             _logger.LogError(ex, "Error loading configuration from {Path}", configPath);
             return null;
         }
-    }
-
-    private string? GetConfigurationPath()
-    {
-        // Check if running in a container
-        var runningInContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
-
-        if (bool.TryParse(runningInContainer, out var isContainer) && isContainer)
-        {
-            _logger.LogInformation("Running in container, using /config directory");
-            var configDir = "/config";
-
-            if (!Directory.Exists(configDir))
-            {
-                _logger.LogError("Configuration directory {ConfigDir} does not exist. " +
-                    "Please mount a volume to /config in your docker-compose.yml or Docker run command. " +
-                    "Example: volumes: - ./config:/config", configDir);
-                Environment.Exit(1);
-                return null;
-            }
-
-            return Path.Combine(configDir, "cost_sensors.yaml");
-        }
-
-        // Default behavior for non-container environments
-        return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "apps", "config", "cost_sensors.yaml");
     }
 
     private void CreateSampleConfiguration(string configPath)

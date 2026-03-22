@@ -1,4 +1,3 @@
-using HomeAutomations.Apps.CostSensor;
 using HomeAutomations.Hosts;
 using HomeAutomations.Models;
 using Microsoft.Extensions.Logging;
@@ -6,17 +5,17 @@ using NetDaemon.AppModel;
 using NetDaemon.Extensions.MqttEntityManager;
 using NetDaemon.HassModel;
 
-namespace HomeAutomations.apps.UnifiApp;
+namespace HomeAutomations.Apps.UnifiApp;
 
 [NetDaemonApp]
 public class DeviceTrackerApp(
-    IHaContext context,
     IMqttEntityManager manager,
     UnifiData data,
     TimeProvider timeProvider,
-    ILogger<DeviceTrackerApp> logger) : UnifiAppBase, IAsyncInitializable
+    ILogger<DeviceTrackerApp> logger) : UnifiAppBase, IAsyncInitializable, IDisposable
 {
     private List<DeviceTracker> _trackers = new();
+    private IDisposable? _subscription;
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
@@ -28,12 +27,12 @@ public class DeviceTrackerApp(
         }
         foreach (var trackerConfig in _config.Trackers)
         {
-            var tracker = new DeviceTracker(context, manager, trackerConfig, timeProvider, logger);
+            var tracker = new DeviceTracker(manager, trackerConfig, timeProvider, logger);
             await tracker.InitializeAsync();
             _trackers.Add(tracker);
         }
 
-        data.ClientDevices.SubscribeAsync(async data =>
+        _subscription = data.ClientDevices.SubscribeAsync(async data =>
         {
             foreach (var deviceTracker in _trackers)
             {
@@ -42,5 +41,10 @@ public class DeviceTrackerApp(
                 await deviceTracker.SetState(isHome);
             }
         });
+    }
+
+    public void Dispose()
+    {
+        _subscription?.Dispose();
     }
 }

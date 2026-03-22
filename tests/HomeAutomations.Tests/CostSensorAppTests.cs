@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Moq;
 using NetDaemon.HassModel;
@@ -31,7 +32,7 @@ public class CostSensorAppTests
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
 
         // Act
-        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object, mockScheduler.Object);
+        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object, mockScheduler.Object, new Mock<IHostApplicationLifetime>().Object);
         await app.InitializeAsync(CancellationToken.None);
 
         // Assert
@@ -72,7 +73,7 @@ public class CostSensorAppTests
         mockHaContext.Setup(x => x.StateAllChanges()).Returns(stateSubject);
 
         // Act
-        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object, mockScheduler.Object);
+        var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object, mockScheduler.Object, new Mock<IHostApplicationLifetime>().Object);
         await app.InitializeAsync(CancellationToken.None);
 
         // Assert
@@ -103,17 +104,13 @@ public class CostSensorAppTests
     }
 
     [Theory]
-    [InlineData(CronSchedule.None)]
-    [InlineData(CronSchedule.Daily)]
-    [InlineData(CronSchedule.Monthly)]
-    [InlineData(CronSchedule.Yearly)]
-    public void CronSchedule_ShouldHaveExpectedValues(CronSchedule expected)
+    [InlineData(CronSchedule.None, 0)]
+    [InlineData(CronSchedule.Daily, 1)]
+    [InlineData(CronSchedule.Monthly, 2)]
+    [InlineData(CronSchedule.Yearly, 3)]
+    public void CronSchedule_ShouldHaveExpectedValues(CronSchedule schedule, int expectedIntValue)
     {
-        // Act
-        var actual = expected;
-
-        // Assert
-        Assert.Equal(expected, actual);
+        Assert.Equal(expectedIntValue, (int)schedule);
     }
 
     [Theory]
@@ -173,7 +170,7 @@ public class CostSensorAppTests
         try
         {
             // Act
-            var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object, mockScheduler.Object);
+            var app = new CostSensorApp(mockHaContext.Object, mockLogger.Object, mockEntityManager.Object, mockLoggerFactory.Object, mockScheduler.Object, new Mock<IHostApplicationLifetime>().Object);
             await app.InitializeAsync(CancellationToken.None);
 
             // Assert - should not log "Running in container"

@@ -16,8 +16,6 @@ services:
     volumes:
       - ./src/NetDaemon/apps:/app/apps
       - ./src/NetDaemon/appsettings.local.json:/app/appsettings.local.json:ro
-    depends_on:
-      - homeassistant
     networks:
       - homeautomation
 

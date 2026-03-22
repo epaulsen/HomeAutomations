@@ -18,7 +18,7 @@ public class PriceSensor : IDisposable
     /// <summary>
     /// Gets the current price value from the tariff sensor
     /// </summary>
-    public double CurrentPrice => _currentPrice;
+    public double CurrentPrice => Volatile.Read(ref _currentPrice);
 
     public PriceSensor(IHaContext ha, ILogger<PriceSensor> logger, string tariffSensorId)
     {
@@ -39,16 +39,16 @@ public class PriceSensor : IDisposable
         if (tariffState == null)
         {
             _logger.LogWarning("Tariff sensor {Tariff} not found in HomeAssistant or has no state", _tariffSensorId);
-            _currentPrice = 0.0;
+            Volatile.Write(ref _currentPrice, 0.0);
         }
         else if (!double.TryParse(tariffState, CultureInfo.InvariantCulture, out var tariffValue))
         {
             _logger.LogWarning("Could not parse tariff value '{TariffValue}' for {Tariff}", tariffState, _tariffSensorId);
-            _currentPrice = 0.0;
+            Volatile.Write(ref _currentPrice, 0.0);
         }
         else
         {
-            _currentPrice = tariffValue;
+            Volatile.Write(ref _currentPrice, tariffValue);
             _logger.LogInformation("Retrieved tariff sensor {Tariff} from HomeAssistant with current value: {Value}",
                 _tariffSensorId, tariffValue);
         }
@@ -75,7 +75,7 @@ public class PriceSensor : IDisposable
                         return;
                     }
 
-                    _currentPrice = tariffValue;
+                    Volatile.Write(ref _currentPrice, tariffValue);
 
                     _logger.LogInformation(
                         "Tariff sensor {Tariff} changed to {NewTariff}",

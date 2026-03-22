@@ -1,6 +1,6 @@
 ﻿using HomeAutomations.Apps.CostSensor;
 using HomeAutomations.Apps.NordPoolApp;
-using HomeAutomations.apps.UnifiApp;
+using HomeAutomations.Apps.UnifiApp;
 using HomeAutomations.Extensions;
 using HomeAutomations.Hosts;
 using HomeAutomations.Models;

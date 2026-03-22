@@ -1,8 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
-using NetDaemon.HassModel;
 using NetDaemon.Extensions.MqttEntityManager;
-using HomeAutomations.apps.UnifiApp;
+using HomeAutomations.Apps.UnifiApp;
 using HomeAutomations.Models;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -14,7 +13,6 @@ public class DeviceTrackerTests
     public async Task SetState_WhenDeviceIsHome_ShouldSetStateToHome()
     {
         // Arrange
-        var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockTimeProvider = new Mock<TimeProvider>();
         mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(DateTimeOffset.UtcNow);
@@ -25,7 +23,7 @@ public class DeviceTrackerTests
             MacAddress = "AA:BB:CC:DD:EE:FF"
         };
 
-        var tracker = new DeviceTracker(mockHaContext.Object, mockEntityManager.Object, config, mockTimeProvider.Object,
+        var tracker = new DeviceTracker(mockEntityManager.Object, config, mockTimeProvider.Object,
             NullLogger.Instance);
         await tracker.InitializeAsync();
 
@@ -42,7 +40,6 @@ public class DeviceTrackerTests
     public async Task SetState_WhenDeviceNotSeenBefore_ShouldSetToNotHomeImmediately()
     {
         // Arrange
-        var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockTimeProvider = new Mock<TimeProvider>();
         mockTimeProvider.Setup(x => x.GetUtcNow()).Returns(DateTimeOffset.UtcNow);
@@ -53,7 +50,7 @@ public class DeviceTrackerTests
             MacAddress = "AA:BB:CC:DD:EE:FF"
         };
 
-        var tracker = new DeviceTracker(mockHaContext.Object, mockEntityManager.Object, config, mockTimeProvider.Object,
+        var tracker = new DeviceTracker(mockEntityManager.Object, config, mockTimeProvider.Object,
             NullLogger.Instance);
         await tracker.InitializeAsync();
 
@@ -70,7 +67,6 @@ public class DeviceTrackerTests
     public async Task SetState_WhenDeviceDisappearsForLessThan60Seconds_ShouldNotSetToNotHome()
     {
         // Arrange
-        var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockTimeProvider = new Mock<TimeProvider>();
 
@@ -83,7 +79,7 @@ public class DeviceTrackerTests
             MacAddress = "AA:BB:CC:DD:EE:FF"
         };
 
-        var tracker = new DeviceTracker(mockHaContext.Object, mockEntityManager.Object, config, mockTimeProvider.Object,
+        var tracker = new DeviceTracker(mockEntityManager.Object, config, mockTimeProvider.Object,
             NullLogger.Instance);
         await tracker.InitializeAsync();
 
@@ -105,7 +101,6 @@ public class DeviceTrackerTests
     public async Task SetState_WhenDeviceDisappearsFor60SecondsOrMore_ShouldSetToNotHome()
     {
         // Arrange
-        var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockTimeProvider = new Mock<TimeProvider>();
 
@@ -118,7 +113,7 @@ public class DeviceTrackerTests
             MacAddress = "AA:BB:CC:DD:EE:FF"
         };
 
-        var tracker = new DeviceTracker(mockHaContext.Object, mockEntityManager.Object, config, mockTimeProvider.Object,
+        var tracker = new DeviceTracker(mockEntityManager.Object, config, mockTimeProvider.Object,
             NullLogger.Instance);
         await tracker.InitializeAsync();
 
@@ -140,7 +135,6 @@ public class DeviceTrackerTests
     public async Task SetState_WhenDeviceDisappearsFor90Seconds_ShouldSetToNotHome()
     {
         // Arrange
-        var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockTimeProvider = new Mock<TimeProvider>();
 
@@ -153,7 +147,7 @@ public class DeviceTrackerTests
             MacAddress = "AA:BB:CC:DD:EE:FF"
         };
 
-        var tracker = new DeviceTracker(mockHaContext.Object, mockEntityManager.Object, config, mockTimeProvider.Object,
+        var tracker = new DeviceTracker(mockEntityManager.Object, config, mockTimeProvider.Object,
             NullLogger.Instance);
         await tracker.InitializeAsync();
 
@@ -175,7 +169,6 @@ public class DeviceTrackerTests
     public async Task SetState_WhenDeviceReappearsWithin60Seconds_ShouldSetToHome()
     {
         // Arrange
-        var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockTimeProvider = new Mock<TimeProvider>();
 
@@ -189,7 +182,7 @@ public class DeviceTrackerTests
         };
 
         var tracker =
-            new DeviceTracker(mockHaContext.Object, mockEntityManager.Object, config, mockTimeProvider.Object,
+            new DeviceTracker(mockEntityManager.Object, config, mockTimeProvider.Object,
                 NullLogger.Instance);
         await tracker.InitializeAsync();
 
@@ -218,7 +211,6 @@ public class DeviceTrackerTests
     public async Task SetState_DeviceAbsentForLessThan60Seconds_ShouldNotSetNotHome(int seconds)
     {
         // Arrange
-        var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockTimeProvider = new Mock<TimeProvider>();
 
@@ -232,7 +224,7 @@ public class DeviceTrackerTests
         };
 
         var tracker =
-            new DeviceTracker(mockHaContext.Object, mockEntityManager.Object, config, mockTimeProvider.Object,
+            new DeviceTracker(mockEntityManager.Object, config, mockTimeProvider.Object,
                 NullLogger.Instance);
         await tracker.InitializeAsync();
 
@@ -257,7 +249,6 @@ public class DeviceTrackerTests
     public async Task SetState_DeviceAbsentFor60SecondsOrMore_ShouldSetNotHome(int seconds)
     {
         // Arrange
-        var mockHaContext = new Mock<IHaContext>();
         var mockEntityManager = new Mock<IMqttEntityManager>();
         var mockTimeProvider = new Mock<TimeProvider>();
 
@@ -271,7 +262,7 @@ public class DeviceTrackerTests
         };
 
         var tracker =
-            new DeviceTracker(mockHaContext.Object, mockEntityManager.Object, config, mockTimeProvider.Object,
+            new DeviceTracker(mockEntityManager.Object, config, mockTimeProvider.Object,
                 NullLogger.Instance);
         await tracker.InitializeAsync();
 
