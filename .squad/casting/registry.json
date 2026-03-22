@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "agents": [
+    {
+      "persistent_name": "Motoko",
+      "universe": "ghost_in_the_shell",
+      "role": "Lead",
+      "created_at": "2026-03-22T16:56:10Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    {
+      "persistent_name": "Batou",
+      "universe": "ghost_in_the_shell",
+      "role": ".NET Dev",
+      "created_at": "2026-03-22T16:56:10Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    {
+      "persistent_name": "Togusa",
+      "universe": "ghost_in_the_shell",
+      "role": "IoT/Integration Dev",
+      "created_at": "2026-03-22T16:56:10Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    {
+      "persistent_name": "Ishikawa",
+      "universe": "ghost_in_the_shell",
+      "role": "Tester/QA",
+      "created_at": "2026-03-22T16:56:10Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    {
+      "persistent_name": "Scribe",
+      "universe": "exempt",
+      "role": "Session Logger",
+      "created_at": "2026-03-22T16:56:10Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    {
+      "persistent_name": "Ralph",
+      "universe": "exempt",
+      "role": "Work Monitor",
+      "created_at": "2026-03-22T16:56:10Z",
+      "legacy_named": false,
+      "status": "active"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "assignments": [
+    {
+      "assignment_id": "init-20260322165614",
+      "timestamp": "2026-03-22T16:56:14Z",
+      "universe": "ghost_in_the_shell",
+      "agents": ["Motoko", "Batou", "Togusa", "Ishikawa"],
+      "exemptions": ["Scribe", "Ralph"],
+      "project": "HomeAutomations"
+    }
+  ]
+}

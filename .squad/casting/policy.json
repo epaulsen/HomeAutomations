@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "universe_allowlist": ["ghost_in_the_shell"],
+  "selected_universe": "ghost_in_the_shell",
+  "max_agents": 15,
+  "overflow_strategy": "diegetic_expansion",
+  "casting_locked": false
+}
