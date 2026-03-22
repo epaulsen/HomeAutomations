@@ -29,3 +29,35 @@
 
 ## Learnings
 
+### 2025-07-16 — Test Coverage Audit
+
+**Baseline:** 31 tests, all passing. 4 test files.
+
+**Coverage state:**
+- `DeviceTracker` — well-tested, parametrized boundary tests, clean AAA structure. Best class in the suite.
+- `CostSensorApp` — partially tested but coupled to `apps/config/cost_sensors.yaml` on disk (PreserveNewest copy). Tests are environment-dependent.
+- `ClientDevice` equality — partially tested (happy path only, no negatives, no null).
+- `IpTests.Serialize` — a non-test: no assertion, always passes, provides false confidence.
+
+**Entirely untested classes (high risk):**
+- `NordPoolSensor`, `NordPoolSubsidizedSensor`, `NordPoolSensorApp`, `NordPoolDataStorage`
+- `CostSensor` (inner class — actual calculation engine, spike detection, cron reset)
+- `PriceSensor` (tariff tracking — default to 0.0 on parse failure silently)
+- `VlanDeviceCountSensor` — null IP address crash risk (`IpAddress` is nullable, no guard before `IPNetwork2.Parse`)
+- `DeviceTrackerApp`, `NetworkDeviceTrackerApp`
+- `ComparableExtensions.IsIdenticalTo`
+
+**Key quality issues found:**
+- `IpTests.Serialize` — no assertion (C1, critical false confidence)
+- `SpikeDetection_*` tests — test inline math, not production code (C6)
+- `CronSchedule_ShouldHaveExpectedValues` — asserts `expected == expected` (useless) (W1)
+- `EqualityTests.EqualToCopy` — potential DateTime JSON precision issue, no negative cases (W3)
+- Redundant Fact/Theory overlap in DeviceTrackerTests (W2)
+
+**Recommended priority for next work:**
+1. Fix `IpTests.Serialize` — add YAML content assertions or delete
+2. `NordPoolSubsidizedSensor.ComputeSubsidizedPrice` tests — pure function, easy wins
+3. `PriceSensor` tests — null/non-numeric state init + subscription
+4. `CostSensor` state-change tests — actual spike detection, cost accumulation
+5. Null guard in `VlanDeviceCountSensor.UpdateCountAsync` + tests
+

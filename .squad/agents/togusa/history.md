@@ -29,3 +29,37 @@
 
 ## Learnings
 
+
+## Learnings
+
+### Full Codebase Code Review — 2026-03-22
+
+**Cross-Cutting Issues Togusa Should Track:**
+
+**Docker/Deployment:**
+- docker-compose.yml line 19: `depends_on: - homeassistant` references service that is commented out
+- docker-compose up will fail until fixed
+- Fix: Remove `depends_on` block or uncomment service
+
+**Infrastructure/Rx Patterns:**
+- 4 Rx subscription leaks identified (NordPoolSensor, NordPoolSubsidizedSensor, DeviceTrackerApp, NetworkDeviceTrackerApp)
+- Subscriptions discarded in SubscribeAsync() calls never disposed
+- Apps restart without cleanup → subscriptions accumulate → feature silently degrades
+- Pattern: Store IDisposable from SubscribeAsync(), implement IDisposable on app, call dispose in shutdown
+- CostSensor subdomain does this correctly (reference for other apps)
+
+**Package Management:**
+- Duplicate NuGet packages: `JoySoftware.NetDaemon.Extensions.Mqtt` (v23.44.0) + `NetDaemon.Extensions.Mqtt` (v25.46.0)
+- Old package should be removed (package was renamed, old version no longer needed)
+- Type ambiguity risk if both packages loaded
+
+**Configuration/Namespacing:**
+- UnifiApp uses lowercase namespace `HomeAutomations.apps.UnifiApp` (violates convention)
+- All other apps use uppercase `HomeAutomations.Apps.*`
+- Needs standardization to uppercase throughout
+
+**For Future Deployments:**
+- Verify all Rx leaks fixed before release (test app restart scenarios)
+- Verify docker-compose.yml dependency is resolved
+- Update package references to remove old MQTT package version
+
