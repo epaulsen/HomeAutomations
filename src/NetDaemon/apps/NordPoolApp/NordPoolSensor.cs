@@ -11,15 +11,13 @@ public class NordPoolSensor(
     IHaContext context,
     IMqttEntityManager manager,
     NordPoolDataStorage storage,
-    ILogger<NordPoolSensor> logger) : IAsyncInitializable
+    ILogger<NordPoolSensor> logger) : IAsyncInitializable, IDisposable
 {
     public const string SensorUniqueId = "sensor.strompris_nordpool_no2";
+    private IDisposable? _subscription;
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
-        var costSensorEntity = context.Entity(SensorUniqueId);
-        var existingState = costSensorEntity.State;
-
         logger.LogInformation("Adding Nordpool Sensor");
         await manager.CreateAsync(
             SensorUniqueId,
@@ -31,7 +29,7 @@ public class NordPoolSensor(
                 unit_of_measurement = "kr",
                 state_class = "measurement"
             });
-        
+
         var current = storage.CurrentHourlyPrice();
         double? state = current != null
             ? current.EntryPerArea.TryGetValue("NO2", out var no2Price) ? no2Price : null
@@ -45,7 +43,7 @@ public class NordPoolSensor(
 
         await manager.SetStateAsync(SensorUniqueId, statestring);
 
-        storage.CurrentPrice.SubscribeAsync(async ma =>
+        _subscription = storage.CurrentPrice.SubscribeAsync(async ma =>
         {
             if (ma == null)
             {
@@ -53,10 +51,19 @@ public class NordPoolSensor(
                 return;
             }
 
+            if (!ma.EntryPerArea.TryGetValue("NO2", out var price))
+            {
+                logger.LogWarning("NO2 area key not found in NordPool data");
+                return;
+            }
 
-            var price = ma.EntryPerArea["NO2"];
             logger.LogInformation("Price changed to {price}", price);
             await manager.SetStateAsync(SensorUniqueId, price.ToString("F2", CultureInfo.InvariantCulture));
         });
+    }
+
+    public void Dispose()
+    {
+        _subscription?.Dispose();
     }
 }

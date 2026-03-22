@@ -9,15 +9,15 @@ namespace HomeAutomations.Apps.NordPoolApp;
 public class NordPoolSubsidizedSensor(
     IHaContext context,
     IMqttEntityManager manager,
-    ILogger<NordPoolSubsidizedSensor> logger) : IAsyncInitializable
+    ILogger<NordPoolSubsidizedSensor> logger) : IAsyncInitializable, IDisposable
 {
     private const string SensorUniqueId = "sensor.strompris_nordpool_no2_med_stromstotte";
+    private const double SubsidyThreshold = 0.9375;
+    private const double SubsidyRate = 0.1;
+    private IDisposable? _subscription;
 
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
-        var sensorEntity = context.Entity(SensorUniqueId);
-        var existingState = sensorEntity.State;
-
         logger.LogInformation("Adding Nordpool subsidized sensor");
         await manager.CreateAsync(
             SensorUniqueId,
@@ -30,8 +30,7 @@ public class NordPoolSubsidizedSensor(
                 state_class = "measurement"
             });
 
-
-        context.Entity(NordPoolSensor.SensorUniqueId).StateAllChanges()
+        _subscription = context.Entity(NordPoolSensor.SensorUniqueId).StateAllChanges()
             .SubscribeAsync(async state =>
             {
                 if (state.New == null)
@@ -63,12 +62,17 @@ public class NordPoolSubsidizedSensor(
             return null;
         }
 
-        if (price < 0.9375)
+        if (price < SubsidyThreshold)
         {
             return price.Value;
         }
 
-        var subsidy = 0.9375 + (price - 0.9375) * 0.1; // 10 % of amount above 93,75 øre
+        var subsidy = SubsidyThreshold + (price - SubsidyThreshold) * SubsidyRate; // 10 % of amount above 93,75 øre
         return subsidy;
+    }
+
+    public void Dispose()
+    {
+        _subscription?.Dispose();
     }
 }

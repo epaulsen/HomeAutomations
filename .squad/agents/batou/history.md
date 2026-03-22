@@ -101,3 +101,29 @@
 4. Replace Environment.Exit(1) with IHostApplicationLifetime
 5. Remove static mutable cache pattern
 
+
+### Code Review Fixes Applied — 2026-03-22
+
+**Session:** Applied all code review findings from 2026-03-22 review. 24 items resolved.
+
+**Files changed:**
+
+- **NordPoolSensor.cs** — C1: TryGetValue on "NO2" key. C2: IDisposable subscription stored, IDisposable implemented. W4: Removed `existingState`.
+- **NordPoolSubsidizedSensor.cs** — C3: IDisposable subscription stored, IDisposable implemented. W4: Removed `existingState`. S2: Extracted `SubsidyThreshold = 0.9375` and `SubsidyRate = 0.1` constants. S8: Disposal now actually disposes the subscription.
+- **NordPoolDataStorage.cs** — W5: `Subject<MultiAreaEntry?>` now private `_currentPriceSubject`; public `CurrentPrice` property returns `IObservable<MultiAreaEntry?>`. C10/S6: `HasPricesForToday`, `HasPricesForTomorrow`, and `PurgeYesterDay` all now use `TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, NorwegianTimeZone)`. S3: `!list.Any()` → `list.Count == 0`.
+- **NordPoolSensorApp.cs** — W14: `ILogger<NordPoolSensorApp>` injected, initialization logged. W15: Removed `using NetDaemon.Extensions.Scheduler` and `using NetDaemon.HassModel`.
+- **NordPoolBackgroundService.cs** — W10: `Fetch()` changed from `public` to `private`. C11/W19: `async void` lambda replaced with `() => { _ = Fetch(...).ContinueWith(..., OnlyOnFaulted); }` pattern.
+- **PriceSensor.cs** — C9: Thread-safety fixed using `Volatile.Read`/`Volatile.Write` for `_currentPrice` field.
+- **CostSensorApp.cs** — C8: `Environment.Exit(1)` replaced with `_lifetime.StopApplication()` via injected `IHostApplicationLifetime`. W6: Removed `GetConfigurationPath()` method, uses `ConfigFolder.Path`/`ConfigFolder.IsRunningInContainer` directly.
+- **CostSensor.cs** — S4: `DateTime.Now` → `DateTime.UtcNow` for spike detection.
+- **HomeAutomations.csproj** — C12: Removed duplicate `JoySoftware.NetDaemon.Extensions.Mqtt v23.44.0`; keeps `NetDaemon.Extensions.Mqtt v25.46.0`.
+- **ComparableExtensions.cs** — W9: Removed `Console.WriteLine(e)`. S7: Removed pointless `OrderBy` before `HashSet` constructor. Removed entire try/catch since it was just rethrowing.
+- **Deleted:** `Utils/AzyncLazy.cs`, `Models/ElectricityPrice.cs`, `Models/HealthCheckResponse.cs` — all confirmed unreferenced.
+
+**Key patterns and gotchas:**
+- `volatile` keyword does NOT support `double` in C#. Use `Volatile.Read`/`Volatile.Write` instead (both exist in System.Threading).
+- When Subject<T> → IObservable<T> change: all subscribers still work since Subject<T> is IObservable<T>; but OnNext() calls must update the private backing field name.
+- Be careful with multiline edit replacements — ensure the entire `old_str` block including surrounding context is exact match.
+- `ConfigFolder.IsRunningInContainer` already encapsulates the env var check — no need to duplicate in app code.
+- `IHostApplicationLifetime` must be added to both the field and the constructor signature and injected through DI (it's registered by `Microsoft.Extensions.Hosting`).
+- Build: ✅ All 31 tests passed after changes.

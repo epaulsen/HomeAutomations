@@ -147,7 +147,7 @@ public class CostSensor : IDisposable
 
                     // Spike detection: if the previous value was recorded less than 60 seconds ago
                     // and the computed delta absolute value is 10 or above, ignore this state change
-                    var currentTime = DateTime.Now;
+                    var currentTime = DateTime.UtcNow;
                     if (_lastStateChangeTime.HasValue)
                     {
                         var timeDelta = currentTime - _lastStateChangeTime.Value;

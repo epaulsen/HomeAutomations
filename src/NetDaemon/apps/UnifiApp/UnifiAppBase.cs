@@ -3,7 +3,7 @@ using HomeAutomations.Models;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace HomeAutomations.apps.UnifiApp;
+namespace HomeAutomations.Apps.UnifiApp;
 
 public class UnifiAppBase
 {

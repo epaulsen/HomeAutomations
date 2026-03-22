@@ -1,4 +1,5 @@
 using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Microsoft.Extensions.Logging;
 using NetDaemon.Extensions.Scheduler;
@@ -12,9 +13,9 @@ public class NordPoolDataStorage
     private IDisposable? _timer = null;
     private readonly INetDaemonScheduler _scheduler;
     private readonly ILogger<NordPoolDataStorage> _logger;
-    private readonly Subject<MultiAreaEntry?> _currentPrice = new();
+    private readonly Subject<MultiAreaEntry?> _currentPriceSubject = new();
 
-    public Subject<MultiAreaEntry?> CurrentPrice => _currentPrice;
+    public IObservable<MultiAreaEntry?> CurrentPrice => _currentPriceSubject.AsObservable();
 
     public NordPoolDataStorage(INetDaemonScheduler scheduler, ILogger<NordPoolDataStorage> logger)
     {
@@ -32,7 +33,7 @@ public class NordPoolDataStorage
     {
         get
         {
-            var now = DateTimeOffset.Now;
+            var now = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, NorwegianTimeZone);
             return _nordpoolData.ContainsKey(new DateOnly(now.Year, now.Month, now.Day));
         }
     }
@@ -41,7 +42,7 @@ public class NordPoolDataStorage
     {
         get
         {
-            var tomorrow = DateTimeOffset.Now.AddDays(1);
+            var tomorrow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, NorwegianTimeZone).AddDays(1);
             return _nordpoolData.ContainsKey(new DateOnly(tomorrow.Year, tomorrow.Month, tomorrow.Day));
         }
     }
@@ -53,7 +54,7 @@ public class NordPoolDataStorage
             return;
         }
         _nordpoolData[date] = prices;
-        _currentPrice.OnNext(CurrentHourlyPrice());
+        _currentPriceSubject.OnNext(CurrentHourlyPrice());
         _logger.LogInformation("Added price for {date}", date);
     }
 
@@ -65,7 +66,7 @@ public class NordPoolDataStorage
         {
             _logger.LogWarning("No current price for {date}", DateTimeOffset.Now);
         }
-        _currentPrice.OnNext(currentPrice);
+        _currentPriceSubject.OnNext(currentPrice);
         var next = DateTimeOffset.UtcNow.AddHours(1);
         next = next.AddMinutes(next.Minute * -1);
 
@@ -98,7 +99,7 @@ public class NordPoolDataStorage
     {
         var list = entries.ToList();
 
-        if (!list.Any())
+        if (list.Count == 0)
         {
             return null;
         }
@@ -125,7 +126,7 @@ public class NordPoolDataStorage
 
     private void PurgeYesterDay()
     {
-        var yesterday = DateTimeOffset.Now.AddDays(-1);
+        var yesterday = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, NorwegianTimeZone).AddDays(-1);
         var date = new DateOnly(yesterday.Year, yesterday.Month, yesterday.Day);
         if (_nordpoolData.ContainsKey(date))
         {

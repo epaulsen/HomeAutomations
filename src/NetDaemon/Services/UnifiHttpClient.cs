@@ -11,28 +11,27 @@ public interface IUnifiClient
 
 public class UnifiHttpClient(HttpClient client, ILogger<UnifiHttpClient> logger) : IUnifiClient
 {
-    private static Guid? _siteId = null;
-
+    private Guid? _siteId = null;
 
     public async Task<UnifiResponse<ClientDevice>> GetDevicesAsync(CancellationToken cancellationToken = default)
     {
-        var siteId = await GetSiteId(client, logger);
+        var siteId = await GetSiteId(cancellationToken);
 
         // TODO: If we hit 200 device limits we would need pagination here.
         var response =
-            await client.GetFromJsonAsync<UnifiResponse<ClientDevice>>($"v1/sites/{siteId:D}/clients?limit=200");
+            await client.GetFromJsonAsync<UnifiResponse<ClientDevice>>($"v1/sites/{siteId:D}/clients?limit=200", cancellationToken);
         ArgumentNullException.ThrowIfNull(response);
         return response;
     }
 
-    private static async Task<Guid> GetSiteId(HttpClient client, ILogger logger)
+    private async Task<Guid> GetSiteId(CancellationToken cancellationToken)
     {
         if (_siteId.HasValue)
         {
             return _siteId.Value;
         }
 
-        var response = await client.GetFromJsonAsync<UnifiResponse<SiteDto>>($"v1/sites");
+        var response = await client.GetFromJsonAsync<UnifiResponse<SiteDto>>("v1/sites", cancellationToken);
         ArgumentNullException.ThrowIfNull(response);
         _siteId = response.Data.Single().Id;
         logger.LogInformation("Unifi returned siteId '{siteId}'", _siteId);

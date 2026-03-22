@@ -61,3 +61,76 @@
 4. `CostSensor` state-change tests — actual spike detection, cost accumulation
 5. Null guard in `VlanDeviceCountSensor.UpdateCountAsync` + tests
 
+
+### 2025-07-16 — Test Fixes and New Coverage
+
+**Before:** 31 tests across 4 files.  
+**After:** 59 tests across 7 files. All passing.
+
+#### Fixed broken tests (3 changes)
+
+1. **`IpTests.Serialize`** (`tests/HomeAutomations.Tests/IpTests.cs`)  
+   - Removed `Debug.WriteLine(yaml)` (zero-assertion anti-pattern)  
+   - Added 3 string-content assertions on serialized YAML (`name: Default`, `vlan: 192.168.1.0/24`, `mac_address: ...`)  
+   - Added deserialization round-trip test with 3 property assertions  
+   - Removed unused `System.Diagnostics` and `System.Net` imports
+
+2. **`CronSchedule_ShouldHaveExpectedValues`** (`tests/HomeAutomations.Tests/CostSensorAppTests.cs`)  
+   - Was: `var actual = expected; Assert.Equal(expected, actual)` — tested nothing  
+   - Fixed to: `[InlineData(CronSchedule.None, 0)]` etc., asserting `(int)schedule == expectedIntValue`  
+   - Now verifies the actual enum integer values (None=0, Daily=1, Monthly=2, Yearly=3)
+
+3. **`EqualityTests.EqualToCopy`** (`tests/HomeAutomations.Tests/EqualityTests.cs`)  
+   - Replaced `DateTime.Now` (precision risk in JSON round-trip) with `new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc)`
+
+#### New test files (3 created)
+
+**`tests/HomeAutomations.Tests/NordPoolApp/NordPoolSubsidizedSensorTests.cs`** — 8 tests  
+- Tests `ComputeSubsidizedPrice` (private) via reflection  
+- Covers: null input, zero price, negative price, below threshold (no subsidy), at threshold (boundary), above threshold (formula verification with precision), high price  
+- Formula verified: `subsidy = 0.9375 + (price - 0.9375) * 0.1` for price >= 0.9375
+
+**`tests/HomeAutomations.Tests/NordPoolApp/NordPoolDataStorageTests.cs`** — 8 tests  
+- Mocks `INetDaemonScheduler` with `RunAt`/`RunEvery` returning `Mock.Of<IDisposable>()`  
+- Covers: `HasPricesForToday` true/false, `HasPricesForTomorrow` false, duplicate date ignored, `CurrentHourlyPrice` returns entry, VAT formula (`/1000 * 1.25`), averaging across multiple entries in same hour, null when no prices stored, `CurrentPrice` observable emission
+- Key pattern: uses `TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, NorwegianTimeZone)` + UTC DateTime for entries to match production filtering logic
+
+**`tests/HomeAutomations.Tests/CostSensor/CostSensorCalculationTests.cs`** — 8 tests  
+- Uses `Subject<StateChange>` + `Entity(haContext, entityId)` to emit real NetDaemon state changes  
+- Covers: first state change skipped (null old value), cost calculation (`delta * tariff`), spike detection (large delta within 60s ignored), large delta on first-ever change processed normally (no prior time → no spike check), small delta within 60s not a spike, `ResetCostAsync` resets to "0.00" (via reflection), entity created when absent, entity NOT re-created when already in HA
+- Key patterns: `SutComponents` record for clean test setup, reflection for `ResetCostAsync`, `CreateStateChange(haContext, old, new)` helper using positional `StateChange` constructor
+
+#### Key technical learnings
+
+- `StateChange` in NetDaemon v23 is a positional record: `StateChange(Entity entity, EntityState? old, EntityState? new)` — cannot use object initializer syntax
+- `Entity.StateChanges()` filters by entity ID from `StateAllChanges()` — mocking `StateAllChanges()` is the correct approach
+- `SubscribeAsync` is async — always add `Task.Delay(300+ms)` after emitting events before asserting
+- `Mock<INetDaemonScheduler>` needs explicit `RunAt` and `RunEvery` setups returning `Mock.Of<IDisposable>()` or constructor throws
+- Testing private methods via `BindingFlags.NonPublic | BindingFlags.Instance` reflection works well for pure functions with no external dependencies
+- Backdating `DateTime` fields via reflection works but can race with async handlers — prefer testing boundary conditions that don't require timing manipulation
+
+---
+
+## 2026-03-22 — Reflection Patterns for Private Method Testing
+
+Added comprehensive test suites for previously untested private methods using reflection:
+
+**Pattern:** 
+```csharp
+var method = typeof(NordPoolSubsidizedSensor)
+    .GetMethod("ComputeSubsidizedPrice", 
+        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
+        null, new[] { typeof(double?) }, null);
+
+var result = (double?)method.Invoke(instance, new object[] { price });
+```
+
+**Observations:**
+- Private methods tested this way are good candidates for `internal` + `InternalsVisibleTo` in future refactors
+- Reflection-based tests should document *why* a method is private (e.g., "internal implementation detail")
+- Always test boundary conditions and null cases for private calculation methods
+
+**Files using pattern:**
+- NordPoolSubsidizedSensorTests.cs (ComputeSubsidizedPrice)
+- CostSensorCalculationTests.cs (ResetCostAsync, spike detection state machine)
+

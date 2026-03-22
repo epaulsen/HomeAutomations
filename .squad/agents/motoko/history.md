@@ -42,3 +42,11 @@
 - **Tests are solid for DeviceTracker** (11 tests with good edge cases). CostSensor tests have some tautological assertions. IpTests.Serialize has no assertions.
 - **`async void` in scheduler callbacks** is dangerous — used in both background services. Needs consistent try/catch wrapping.
 - **Config path logic is duplicated** between `ConfigFolder.cs` and `CostSensorApp.GetConfigurationPath()`.
+
+### 2025-07-17 — Fix Verification Pass
+- **Build:** Passed with 1 non-blocking warning (CS9113 unused `context` param in NordPoolSensor).
+- **Tests:** 59/59 passed (up from 11 — 48 new tests added by team).
+- **All critical fixes verified:** TryGetValue guards, subscription lifecycle, null IP guard, Environment.Exit replaced, duplicate NuGet removed, docker-compose fixed, namespace consistency achieved.
+- **New tests are solid:** Subsidy formula coverage, timezone/VAT/averaging tests, cost calculation with spike detection — all well-structured.
+- **Remaining minor items for future:** CS9113 unused parameter cleanup, async void in background services (not addressed this pass), dead code removal (not in scope this pass).
+- **Verdict: APPROVED** — codebase is in shippable state.

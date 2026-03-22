@@ -60,14 +60,24 @@ public class ClientDevice : IEquatable<ClientDevice>, IComparable<ClientDevice>
     [JsonPropertyName("uplinkDeviceId")]
     public string? UplinkDeviceId { get; set; }
 
-    // Sammenligning for sortering (f.eks. på Id)
+    // Comparison for sorting (by all fields to be consistent with Equals)
     public int CompareTo(ClientDevice? other)
     {
         if (other == null) return 1;
-        return Id.CompareTo(other.Id);
+        int cmp = Id.CompareTo(other.Id);
+        if (cmp != 0) return cmp;
+        cmp = string.Compare(Name, other.Name, StringComparison.Ordinal);
+        if (cmp != 0) return cmp;
+        cmp = string.Compare(IpAddress, other.IpAddress, StringComparison.Ordinal);
+        if (cmp != 0) return cmp;
+        cmp = string.Compare(Type, other.Type, StringComparison.Ordinal);
+        if (cmp != 0) return cmp;
+        cmp = string.Compare(MacAddress, other.MacAddress, StringComparison.Ordinal);
+        if (cmp != 0) return cmp;
+        return string.Compare(Access?.Type, other.Access?.Type, StringComparison.Ordinal);
     }
 
-    // Likhetssjekk basert på alle relevante felter
+    // Equality check based on all relevant fields
     public bool Equals(ClientDevice? other)
     {
         if (other == null) return false;
@@ -84,11 +94,11 @@ public class ClientDevice : IEquatable<ClientDevice>, IComparable<ClientDevice>
 
     public override int GetHashCode()
     {
-        return HashCode.Combine(Id, Name, IpAddress, Type, MacAddress);
+        return HashCode.Combine(Id, Name, IpAddress, Type, MacAddress, Access?.Type);
     }
 }
 
-public class AccessInfo : IEquatable<AccessInfo>, IEqualityComparer<AccessInfo>
+public class AccessInfo : IEquatable<AccessInfo>
 {
     [JsonPropertyName("type")]
     public string? Type { get; set; }
@@ -98,13 +108,10 @@ public class AccessInfo : IEquatable<AccessInfo>, IEqualityComparer<AccessInfo>
         return other?.Type == Type;
     }
 
-    public bool Equals(AccessInfo? x, AccessInfo? y)
-    {
-        return x?.Type == y?.Type;
-    }
+    public override bool Equals(object? obj) => Equals(obj as AccessInfo);
 
-    public int GetHashCode(AccessInfo obj)
+    public override int GetHashCode()
     {
-        return obj.Type?.GetHashCode() ?? 0;
+        return Type?.GetHashCode() ?? 0;
     }
 }
