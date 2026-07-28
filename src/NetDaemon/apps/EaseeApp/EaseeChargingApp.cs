@@ -20,8 +20,6 @@ public class EaseeChargingApp(IHaContext ha, ILogger<EaseeChargingApp> logger) :
     private readonly EaseeChargingDecisionEngine _decisionEngine = new();
     private readonly List<IDisposable> _subscriptions = [];
     private readonly SemaphoreSlim _evaluationLock = new(1, 1);
-    private CancellationTokenSource? _pollLoopCts;
-    private Task? _pollLoopTask;
     private EaseeChargingConfig? _config;
     private int? _lastSentAmpere;
 
@@ -57,15 +55,12 @@ public class EaseeChargingApp(IHaContext ha, ILogger<EaseeChargingApp> logger) :
             _config.FeatureToggleEntityId);
 
         SubscribeToStateChanges(_config.ChargerStatusEntityId);
-        SubscribeToStateChanges(_config.ChargingPowerEntityId);
+        SubscribeToStateChanges(_config.DynamicChargerLimitEntityId);
         SubscribeToStateChanges(_config.VoltageEntityId);
         SubscribeToStateChanges(_config.AvailablePowerEntityId);
         SubscribeToStateChanges(_config.FeatureToggleEntityId);
 
         await EvaluateAndApplyAsync(DateTimeOffset.UtcNow, cancellationToken);
-
-        _pollLoopCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _pollLoopTask = RunPollLoopAsync(_pollLoopCts.Token);
     }
 
     private void SubscribeToStateChanges(string entityId)
@@ -78,21 +73,6 @@ public class EaseeChargingApp(IHaContext ha, ILogger<EaseeChargingApp> logger) :
             });
 
         _subscriptions.Add(subscription);
-    }
-
-    private async Task RunPollLoopAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
-            while (await timer.WaitForNextTickAsync(cancellationToken))
-            {
-                await EvaluateAndApplyAsync(DateTimeOffset.UtcNow, cancellationToken);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-        }
     }
 
     private async Task EvaluateAndApplyAsync(DateTimeOffset now, CancellationToken cancellationToken)
@@ -130,12 +110,10 @@ public class EaseeChargingApp(IHaContext ha, ILogger<EaseeChargingApp> logger) :
                     return;
                 }
 
-                if (!TryReadSensorDouble(_config.ChargingPowerEntityId, out var chargingPowerKw))
+                if (!TryReadSensorInt(_config.DynamicChargerLimitEntityId, out currentAmpere))
                 {
                     return;
                 }
-
-                currentAmpere = CalculateCurrentAmpere(chargingPowerKw, voltage);
             }
 
             var decision = _decisionEngine.Evaluate(
@@ -167,7 +145,7 @@ public class EaseeChargingApp(IHaContext ha, ILogger<EaseeChargingApp> logger) :
             ha.CallService(_config.ServiceDomain, _config.ServiceName, data: new
             {
                 device_id = _config.DeviceId,
-                current_p1 = decision.TargetAmpere,
+                current = decision.TargetAmpere,
                 time_to_live = _config.TimeToLive
             });
 
@@ -224,6 +202,27 @@ public class EaseeChargingApp(IHaContext ha, ILogger<EaseeChargingApp> logger) :
         return true;
     }
 
+    private bool TryReadSensorInt(string entityId, out int value)
+    {
+        var raw = ha.Entity(entityId).State;
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            value = 0;
+            logger.LogWarning("Sensor {EntityId} has no state", entityId);
+            return false;
+        }
+
+        if (!double.TryParse(raw, CultureInfo.InvariantCulture, out var doubleValue))
+        {
+            logger.LogWarning("Failed parsing sensor {EntityId} state '{State}' as number", entityId, raw);
+            value = 0;
+            return false;
+        }
+
+        value = (int)Math.Round(doubleValue, MidpointRounding.AwayFromZero);
+        return true;
+    }
+
     private EaseeChargingConfig? LoadConfiguration()
     {
         var configPath = Path.Combine(ConfigFolder.Path, "easee_charging.yaml");
@@ -269,7 +268,7 @@ public class EaseeChargingApp(IHaContext ha, ILogger<EaseeChargingApp> logger) :
             # Easee charging control configuration
             device_id: "7eed8e06a2305c88415b94537e836fdd"
             charger_status_entity_id: "sensor.ehzyxy7d_status"
-            charging_power_entity_id: "sensor.ehzyxy7d_power"
+            dynamic_charger_limit_entity_id: "sensor.ehzyxy7d_dynamic_charger_limit"
             voltage_entity_id: "sensor.0x086bd7fffeb6c404_voltage"
             available_power_entity_id: "sensor.available_power_this_hour"
             feature_toggle_entity_id: "input_boolean.overhold_effektniva"
@@ -280,24 +279,13 @@ public class EaseeChargingApp(IHaContext ha, ILogger<EaseeChargingApp> logger) :
 
             min_ampere: 6
             max_ampere: 25
-            positive_threshold_watts: 400
+            positive_threshold_watts: 300
             positive_step_ampere: 1
             negative_duration_seconds: 60
             positive_duration_seconds: 120
             """;
 
         File.WriteAllText(configPath, sampleConfig, Encoding.UTF8);
-    }
-
-    public static int CalculateCurrentAmpere(double chargingPowerKw, double voltage)
-    {
-        if (voltage <= 0.0)
-        {
-            return 0;
-        }
-
-        var watts = Math.Max(0, chargingPowerKw) * 1000.0;
-        return (int)Math.Round(watts / voltage, MidpointRounding.AwayFromZero);
     }
 
     public static int CalculateReductionAmpere(double deficitWatts, double voltage)
@@ -312,9 +300,6 @@ public class EaseeChargingApp(IHaContext ha, ILogger<EaseeChargingApp> logger) :
 
     public void Dispose()
     {
-        _pollLoopCts?.Cancel();
-        _pollLoopCts?.Dispose();
-
         foreach (var subscription in _subscriptions)
         {
             subscription.Dispose();
@@ -324,104 +309,3 @@ public class EaseeChargingApp(IHaContext ha, ILogger<EaseeChargingApp> logger) :
         _evaluationLock.Dispose();
     }
 }
-
-public sealed class EaseeChargingDecisionEngine
-{
-    private DateTimeOffset? _negativeSince;
-    private DateTimeOffset? _positiveSince;
-    private bool _forcedMaxSentWhileDisabled;
-
-    public EaseeChargeCommand? Evaluate(EaseeEvaluationInput input, DateTimeOffset now)
-    {
-        if (!input.IsFeatureEnabled)
-        {
-            ResetWindows();
-            if (!_forcedMaxSentWhileDisabled)
-            {
-                _forcedMaxSentWhileDisabled = true;
-                return new EaseeChargeCommand(input.MaxAmpere, ForceSend: true);
-            }
-
-            return null;
-        }
-
-        _forcedMaxSentWhileDisabled = false;
-
-        if (!input.IsCharging)
-        {
-            ResetWindows();
-            return null;
-        }
-
-        if (input.AvailablePowerWatts < 0)
-        {
-            _positiveSince = null;
-
-            if (!_negativeSince.HasValue)
-            {
-                _negativeSince = now;
-                return null;
-            }
-
-            if (now - _negativeSince.Value < input.NegativeWindow)
-            {
-                return null;
-            }
-
-            var decreaseAmpere = EaseeChargingApp.CalculateReductionAmpere(Math.Abs(input.AvailablePowerWatts), input.Voltage);
-            if (decreaseAmpere <= 0)
-            {
-                _negativeSince = now;
-                return null;
-            }
-
-            _negativeSince = now;
-            var targetAmpere = Math.Clamp(input.CurrentAmpere - decreaseAmpere, input.MinAmpere, input.MaxAmpere);
-            return new EaseeChargeCommand(targetAmpere, ForceSend: false);
-        }
-
-        if (input.AvailablePowerWatts > input.PositiveThresholdWatts && input.CurrentAmpere < input.MaxAmpere)
-        {
-            _negativeSince = null;
-
-            if (!_positiveSince.HasValue)
-            {
-                _positiveSince = now;
-                return null;
-            }
-
-            if (now - _positiveSince.Value < input.PositiveWindow)
-            {
-                return null;
-            }
-
-            _positiveSince = now;
-            var targetAmpere = Math.Clamp(input.CurrentAmpere + input.PositiveStepAmpere, input.MinAmpere, input.MaxAmpere);
-            return new EaseeChargeCommand(targetAmpere, ForceSend: false);
-        }
-
-        ResetWindows();
-        return null;
-    }
-
-    private void ResetWindows()
-    {
-        _negativeSince = null;
-        _positiveSince = null;
-    }
-}
-
-public sealed record EaseeEvaluationInput(
-    bool IsFeatureEnabled,
-    bool IsCharging,
-    double AvailablePowerWatts,
-    int CurrentAmpere,
-    double Voltage,
-    int MinAmpere,
-    int MaxAmpere,
-    int PositiveThresholdWatts,
-    int PositiveStepAmpere,
-    TimeSpan NegativeWindow,
-    TimeSpan PositiveWindow);
-
-public sealed record EaseeChargeCommand(int TargetAmpere, bool ForceSend);

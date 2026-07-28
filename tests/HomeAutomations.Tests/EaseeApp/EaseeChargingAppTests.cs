@@ -5,18 +5,6 @@ namespace HomeAutomations.Tests.EaseeApp;
 public class EaseeChargingAppTests
 {
     [Theory]
-    [InlineData(4.83, 230, 21)]
-    [InlineData(4.6, 230, 20)]
-    [InlineData(0, 230, 0)]
-    [InlineData(-1, 230, 0)]
-    [InlineData(2.3, 0, 0)]
-    public void CalculateCurrentAmpere_ReturnsExpectedAmps(double chargingPowerKw, double voltage, int expectedAmpere)
-    {
-        var result = EaseeChargingApp.CalculateCurrentAmpere(chargingPowerKw, voltage);
-        Assert.Equal(expectedAmpere, result);
-    }
-
-    [Theory]
     [InlineData(-600, 230, 3)]
     [InlineData(-1, 230, 1)]
     [InlineData(-230, 230, 1)]
