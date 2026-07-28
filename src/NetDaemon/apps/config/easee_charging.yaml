@@ -1,0 +1,18 @@
+# Easee charging control configuration
+device_id: "7eed8e06a2305c88415b94537e836fdd"
+charger_status_entity_id: "sensor.ehzyxy7d_status"
+dynamic_charger_limit_entity_id: "sensor.ehzyxy7d_dynamic_charger_limit"
+voltage_entity_id: "sensor.0x086bd7fffeb6c404_voltage"
+available_power_entity_id: "sensor.available_power_this_hour"
+feature_toggle_entity_id: "input_boolean.overhold_effektniva"
+
+service_domain: "easee"
+service_name: "set_charger_dynamic_limit"
+time_to_live: 0
+
+min_ampere: 6
+max_ampere: 25
+positive_threshold_watts: 300
+positive_step_ampere: 1
+negative_duration_seconds: 60
+positive_duration_seconds: 120

@@ -1,4 +1,5 @@
 ﻿using HomeAutomations.Apps.CostSensor;
+using HomeAutomations.Apps.EaseeApp;
 using HomeAutomations.Apps.NordPoolApp;
 using HomeAutomations.Apps.UnifiApp;
 using HomeAutomations.Extensions;
@@ -66,6 +67,7 @@ try
                 .AddNetDaemonApp<DeviceTrackerApp>()
                 .AddNetDaemonApp<CostSensorApp>()
                 .AddNetDaemonApp<NordPoolSensorApp>()
+                .AddNetDaemonApp<EaseeChargingApp>()
                 ;
 
         })
@@ -84,4 +86,3 @@ catch (Exception e)
     Console.WriteLine($"Failed to start host... {e}");
     throw;
 }
-

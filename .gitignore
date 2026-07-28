@@ -351,6 +351,7 @@ appsettings.Development.json
 
 # Ignore YAML config files
 **/*.yaml
+!src/NetDaemon/apps/config/*.yaml
 # Squad: ignore runtime state (logs, inbox, sessions)
 .squad/orchestration-log/
 .squad/log/
