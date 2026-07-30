@@ -34,7 +34,7 @@ public class UnifiHttpClient(HttpClient client, ILogger<UnifiHttpClient> logger)
         var response = await client.GetFromJsonAsync<UnifiResponse<SiteDto>>("v1/sites", cancellationToken);
         ArgumentNullException.ThrowIfNull(response);
         _siteId = response.Data.Single().Id;
-        logger.LogInformation("Unifi returned siteId '{siteId}'", _siteId);
+        logger.LogDebug("Unifi returned siteId '{siteId}'", _siteId);
         return _siteId.Value;
     }
 }
